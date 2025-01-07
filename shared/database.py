@@ -9,7 +9,7 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import UpdateResult
 
-from shared.environment import DEFAULT_JOB_COLLECTION_NAME
+from shared.environment import DEFAULT_JOB_COLLECTION_NAME, DEFAULT_LOCAL_MONGO_URI, DEFAULT_DB_NAME
 
 
 class DatabaseConnector(ABC):
@@ -18,6 +18,7 @@ class DatabaseConnector(ABC):
         self.database_id = database_id
         self.client = self._get_client(connection_uri)
         self.db = self._get_database(self.database_id)
+        self.connector_id = connector_id
 
     @property
     @abstractmethod
@@ -61,9 +62,15 @@ class DatabaseConnector(ABC):
         return str(datetime.utcnow())
 
 
-class MongoDbConnector(DatabaseConnector):
-    def __init__(self, connection_uri: str, database_id: str, connector_id: str = None):
+class MongoConnector(DatabaseConnector):
+    def __init__(self,
+                 connection_uri: str,
+                 database_id: str,
+                 connector_id: str = None):
         super().__init__(connection_uri, database_id, connector_id)
+
+    def confirm_connection(self):
+        print(f"Connection established with database: {self._get_database(self.database_id)}")
 
     def get_collection(self, collection_name: str) -> Collection:
         # try:
@@ -135,3 +142,9 @@ class MongoDbConnector(DatabaseConnector):
         coll = DEFAULT_JOB_COLLECTION_NAME
         for job in self.db[coll].find():
             self.db[coll].delete_one(job)
+
+
+def test_mongo_connector():
+    conn = MongoConnector(connection_uri=DEFAULT_LOCAL_MONGO_URI, database_id=DEFAULT_DB_NAME, connector_id="test")
+    conn.confirm_connection()
+

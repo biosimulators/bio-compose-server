@@ -29,7 +29,7 @@ from shared.data_model import (
     CompositionRun,
     OutputData
 )
-from shared.database import MongoDbConnector
+from shared.database import MongoConnector
 from shared.io import write_uploaded_file, download_file_from_bucket
 from shared.log_config import setup_logging
 from shared.utils import get_project_version
@@ -83,7 +83,7 @@ APP_SERVERS = [
 
 # -- app components -- #
 
-db_conn_gateway = MongoDbConnector(connection_uri=MONGO_URI, database_id=DEFAULT_DB_NAME)
+db_conn_gateway = MongoConnector(connection_uri=MONGO_URI, database_id=DEFAULT_DB_NAME)
 router = APIRouter()
 app = FastAPI(title=APP_TITLE, version=APP_VERSION, servers=APP_SERVERS)
 app.add_middleware(
@@ -162,29 +162,32 @@ async def submit_composition(
     if not spec_file.filename.endswith('.json') and spec_file.content_type != 'application/json':
         raise HTTPException(status_code=400, detail="Invalid file type. Only JSON files are supported.")
 
-    # parse uploaded file for Composition spec
+    # multifold IO verification:
     try:
+        # 1. verification by fitting a common datamodel (in this case composition spec)
         contents = await spec_file.read()
         data: Dict = json.loads(contents)
+
+        # 1a. verification by fitting the individual process specs to an expected structure
         nodes = []
         for node_name, node_spec in data.items():
             node = CompositionNode(name=node_name, **node_spec)
             nodes.append(node)
 
+        # 1b. verification by fitting that tree of nodes into an expected structure (which is consumed by pbg.Composite())
         composition = CompositionSpec(
             nodes=nodes,
             emitter_mode="all",
             job_id="composition" + str(uuid.uuid4())
         )
 
-        # write spec to db for job, immediately available to the worker
-        timestamp = db_conn_gateway.timestamp()
+        # 2. verification by fitting write confirmation into CompositionRun...to verify O phase of IO, garbage in garbage out
         write_confirmation = await db_conn_gateway.write(
             collection_name=DEFAULT_JOB_COLLECTION_NAME,
             status="PENDING",
             spec=composition.spec,
             job_id=composition.job_id,
-            last_updated=timestamp,
+            last_updated=db_conn_gateway.timestamp(),
             simulators=simulators,
             duration=duration,
             results={}

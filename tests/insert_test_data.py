@@ -1,11 +1,11 @@
 import os
 import asyncio
 
-from shared_worker import MongoDbConnector
+from shared_worker import MongoConnector
 
 
 def __run_startup():
-    db_connector = MongoDbConnector(connection_uri=os.environ['MONGO_URI'], database_id='service_requests')
+    db_connector = MongoConnector(connection_uri=os.environ['MONGO_URI'], database_id='service_requests')
 
     test_entry1 = {
         'job_id': 'test-entry1',

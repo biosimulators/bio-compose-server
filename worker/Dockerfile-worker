@@ -4,4 +4,6 @@ FROM ghcr.io/biosimulators/bio-compose-server-base:0.0.1
 COPY ./shared /bio-compose-server/shared
 COPY ./worker /bio-compose-server/worker
 
-CMD ["source", "/.bashrc", "&&", "python3", "worker/main.py"]
+ENTRYPOINT ["/usr/bin/env"]
+# CMD ["source", "/.bashrc", "&&", "python3", "worker/main.py"]
+CMD ["bash"]

@@ -27,7 +27,7 @@ from typing import Any, Mapping, List
 
 from process_bigraph import Composite
 
-from shared.database import MongoDbConnector
+from shared.database import MongoConnector
 from shared.dynamic_env import install_request_dependencies
 from shared.log_config import setup_logging
 
@@ -36,13 +36,16 @@ logger = setup_logging(__file__)
 
 
 class JobDispatcher(object):
-    def __init__(self, connection_uri: str, database_id: str, timeout: int = 5):
+    def __init__(self,
+                 connection_uri: str,
+                 database_id: str,
+                 timeout: int = 5):
         """
         :param connection_uri: mongodb connection URI
         :param database_id: mongodb database ID
         :param timeout: number of minutes for timeout. Default is 5 minutes
         """
-        self.db_connector = MongoDbConnector(connection_uri=connection_uri, database_id=database_id)
+        self.db_connector = MongoConnector(connection_uri=connection_uri, database_id=database_id)
         self.timeout = timeout * 60
 
     @property
@@ -52,9 +55,13 @@ class JobDispatcher(object):
     async def run(self):
         # iterate over all jobs
         for job in self.current_jobs:
-            await self.process_job(job)
+            await self.dispatch(job)
 
-    async def process_job(self, job: Mapping[str, Any]):
+    @staticmethod
+    def generate_failed_job(job_id: str, msg: str):
+        return {"job_id": job_id, "status": "FAILED", "result": msg}
+
+    async def dispatch(self, job: Mapping[str, Any]):
         job_status = job["status"]
         if job_status.lower() != "pending":
             # 1. set job id
@@ -111,3 +118,9 @@ class JobDispatcher(object):
             )
 
             os.remove(temp_path) if os.path.exists(temp_path) else None
+
+            # 11.
+
+
+def test_dispatcher():
+    pass

@@ -4,7 +4,7 @@ import logging
 
 from dotenv import load_dotenv
 
-from shared.database import MongoDbConnector
+from shared.database import MongoConnector
 from shared.environment import ENV_PATH, DEFAULT_DB_NAME
 from shared.log_config import setup_logging
 from worker.job import JobDispatcher
@@ -24,7 +24,7 @@ MAX_RETRIES = 30
 # creds params
 MONGO_URI = os.getenv("MONGO_URI")
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-# db_connector = MongoDbConnector(connection_uri=MONGO_URI, database_id=DB_NAME)
+# db_connector = MongoConnector(connection_uri=MONGO_URI, database_id=DB_NAME)
 dispatcher = JobDispatcher(connection_uri=MONGO_URI, database_id=DEFAULT_DB_NAME)
 
 
