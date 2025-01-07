@@ -77,3 +77,5 @@ RUN conda run -n server poetry config virtualenvs.create false \
 
 # expose for gateway
 EXPOSE 3001
+
+CMD ["source", "/.bashrc", "python", "--version"]
