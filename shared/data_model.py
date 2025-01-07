@@ -11,17 +11,6 @@ from fastapi.responses import FileResponse
 import numpy as np
 
 
-PROJECT_ROOT_PATH = os.path.dirname(os.path.dirname(__file__))
-DEV_ENV_PATH = os.path.join(PROJECT_ROOT_PATH, 'shared', '.env')
-
-load_dotenv(DEV_ENV_PATH)
-
-DB_TYPE = os.getenv("DB_TYPE", "mongo")
-DB_NAME = os.getenv("DB_NAME")
-BUCKET_NAME = os.getenv("BUCKET_NAME")
-JOB_COLLECTION_NAME = os.getenv("JOB_COLLECTION_NAME", "jobs")
-
-
 class BaseModel(_BaseModel):
     """Base Pydantic Model with custom app configuration"""
     model_config = ConfigDict(arbitrary_types_allowed=True)

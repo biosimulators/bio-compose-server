@@ -19,11 +19,11 @@ services:
       - "3001:3001"
     networks:
       - appnetwork
-    # command: conda run -n server uvicorn gateway.main:app --host 0.0.0.0 --port 3001 --reload
+    command: conda run -n server uvicorn gateway.main:app --host 0.0.0.0 --port 3001 --reload
     depends_on:
       - mongodb
 
-  compose-worker:
+  worker:
     platform: linux/amd64
     build:
       context: .

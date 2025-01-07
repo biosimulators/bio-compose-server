@@ -9,7 +9,7 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import UpdateResult
 
-from shared.data_model import JOB_COLLECTION_NAME, WriteResponse
+from shared.environment import DEFAULT_JOB_COLLECTION_NAME
 
 
 class DatabaseConnector(ABC):
@@ -53,7 +53,7 @@ class DatabaseConnector(ABC):
         pass
 
     async def get_job(self, job_id: str, **kwargs):
-        job_result = await self.read(collection_name=JOB_COLLECTION_NAME, job_id=job_id, **kwargs)
+        job_result = await self.read(collection_name=DEFAULT_JOB_COLLECTION_NAME, job_id=job_id, **kwargs)
         return job_result
 
     @staticmethod
@@ -107,11 +107,11 @@ class MongoDbConnector(DatabaseConnector):
             return {}
 
     def get_jobs(self):
-        coll = self.get_collection(JOB_COLLECTION_NAME)
+        coll = self.get_collection(DEFAULT_JOB_COLLECTION_NAME)
         return [item for item in coll.find()]
 
     async def update_job_status(self, job_id: str, status: str) -> UpdateResult:
-        coll = self.get_collection(JOB_COLLECTION_NAME)
+        coll = self.get_collection(DEFAULT_JOB_COLLECTION_NAME)
         return coll.update_one(
             filter={'job_id': job_id},
             update={
@@ -123,7 +123,7 @@ class MongoDbConnector(DatabaseConnector):
         )
 
     async def update_job(self, job_id: str, **params) -> UpdateResult:
-        coll = self.get_collection(JOB_COLLECTION_NAME)
+        coll = self.get_collection(DEFAULT_JOB_COLLECTION_NAME)
         job_params = params.copy()
         job_params['last_updated'] = self.timestamp()
         return coll.update_one(
@@ -132,6 +132,6 @@ class MongoDbConnector(DatabaseConnector):
         )
 
     def refresh_jobs(self):
-        coll = JOB_COLLECTION_NAME
+        coll = DEFAULT_JOB_COLLECTION_NAME
         for job in self.db[coll].find():
             self.db[coll].delete_one(job)

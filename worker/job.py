@@ -1,4 +1,4 @@
-"""
+""""
 Alex Patrie 1/6/2025
 
 NOTE: This workflow is run by the microservices architecture and offloads ALL simulation logic to Biosimulator Processes!
@@ -17,7 +17,9 @@ The general workflow should be:
 10. worker: update job document ['results'] field with #8's data
 11. worker: perhaps emit an event?
 """
+import json
 import subprocess
+import tempfile
 
 import dotenv
 import os
@@ -25,7 +27,6 @@ from typing import Any, Mapping, List
 
 from process_bigraph import Composite
 
-from shared.data_model import DB_TYPE, DB_NAME, JOB_COLLECTION_NAME
 from shared.database import MongoDbConnector
 from shared.dynamic_env import install_request_dependencies
 from shared.log_config import setup_logging
@@ -94,7 +95,19 @@ class JobDispatcher(object):
             # 9. update job in DB ['results'] to Composite().gather_results() AND change status to COMPLETE
             await self.db_connector.update_job(job_id=job_id, status="COMPLETE", results=results)
 
+            # 10. add new result state in db within result_states collection!
+            temp_dir = tempfile.mkdtemp()
+            temp_fname= f"{job}.state.json"
+            composition.save(filename=temp_fname, outdir=temp_dir)
+            temp_path = os.path.join(temp_dir, temp_fname)
+            with open(temp_path, 'r') as f:
+                current_data = json.load(f)
 
+            await self.db_connector.write(
+                collection_name="result_states",
+                job_id=job_id,
+                data=current_data,
+                last_updated=self.db_connector.timestamp()
+            )
 
-
-
+            os.remove(temp_path) if os.path.exists(temp_path) else None

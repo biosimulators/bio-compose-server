@@ -23,30 +23,23 @@ from shared.data_model import (
     AgentParameters,
     BigraphRegistryAddresses,
     IncompleteJob,
-    DB_TYPE,
-    DB_NAME,
-    BUCKET_NAME,
     JobStatus,
     CompositionNode,
     CompositionSpec,
     CompositionRun,
-    JOB_COLLECTION_NAME, BaseClass, OutputData
+    OutputData
 )
 from shared.database import MongoDbConnector
 from shared.io import write_uploaded_file, download_file_from_bucket
 from shared.log_config import setup_logging
 from shared.utils import get_project_version
+from shared.environment import ENV_PATH, DEFAULT_DB_NAME, DEFAULT_DB_TYPE, DEFAULT_JOB_COLLECTION_NAME, DEFAULT_BUCKET_NAME
 
-
-# setup logging
 
 logger = setup_logging(__file__)
 
-
 # -- load dev env -- #
-
-dotenv.load_dotenv("../shared/.env")  # NOTE: create an env config at this filepath if dev
-
+dotenv.load_dotenv(ENV_PATH)  # NOTE: create an env config at this filepath if dev
 
 APP_VERSION = get_project_version()
 MONGO_URI = os.getenv("MONGO_URI")
@@ -90,7 +83,7 @@ APP_SERVERS = [
 
 # -- app components -- #
 
-db_connector = MongoDbConnector(connection_uri=MONGO_URI, database_id=DB_NAME)
+db_conn_gateway = MongoDbConnector(connection_uri=MONGO_URI, database_id=DEFAULT_DB_NAME)
 router = APIRouter()
 app = FastAPI(title=APP_TITLE, version=APP_VERSION, servers=APP_SERVERS)
 app.add_middleware(
@@ -101,7 +94,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-app.mongo_client = db_connector.client
+app.mongo_client = db_conn_gateway.client
 
 # It will be represented as a `str` on the model so that it can be serialized to JSON. Represents an ObjectId field in the database.
 PyObjectId = Annotated[str, BeforeValidator(str)]
@@ -112,20 +105,20 @@ PyObjectId = Annotated[str, BeforeValidator(str)]
 @app.on_event("startup")
 def start_client() -> DbClientResponse:
     """TODO: generalize this to work with multiple client types. Currently using Mongo."""
-    _time = db_connector.timestamp()
+    _time = db_conn_gateway.timestamp()
     try:
         app.mongo_client.admin.command('ping')
         msg = "Pinged your deployment. You successfully connected to MongoDB!"
     except Exception as e:
         msg = f"Failed to connect to MongoDB:\n{e}"
-    return DbClientResponse(message=msg, db_type=DB_TYPE, timestamp=_time)
+    return DbClientResponse(message=msg, db_type=DEFAULT_DB_TYPE, timestamp=_time)
 
 
 @app.on_event("shutdown")
 def stop_mongo_client() -> DbClientResponse:
-    _time = db_connector.timestamp()
+    _time = db_conn_gateway.timestamp()
     app.mongo_client.close()
-    return DbClientResponse(message=f"{DB_TYPE} successfully closed!", db_type=DB_TYPE, timestamp=_time)
+    return DbClientResponse(message=f"{DEFAULT_DB_TYPE} successfully closed!", db_type=DEFAULT_DB_TYPE, timestamp=_time)
 
 
 # -- endpoint logic -- #
@@ -185,9 +178,9 @@ async def submit_composition(
         )
 
         # write spec to db for job, immediately available to the worker
-        timestamp = db_connector.timestamp()
-        write_confirmation = await db_connector.write(
-            collection_name=JOB_COLLECTION_NAME,
+        timestamp = db_conn_gateway.timestamp()
+        write_confirmation = await db_conn_gateway.write(
+            collection_name=DEFAULT_JOB_COLLECTION_NAME,
             status="PENDING",
             spec=composition.spec,
             job_id=composition.job_id,
@@ -222,8 +215,8 @@ async def run_smoldyn(
     try:
         # get job params
         job_id = "simulation-execution-smoldyn" + str(uuid.uuid4())
-        _time = db_connector.timestamp()
-        uploaded_file_location = await write_uploaded_file(job_id=job_id, uploaded_file=uploaded_file, bucket_name=BUCKET_NAME, extension='.txt')
+        _time = db_conn_gateway.timestamp()
+        uploaded_file_location = await write_uploaded_file(job_id=job_id, uploaded_file=uploaded_file, bucket_name=DEFAULT_BUCKET_NAME, extension='.txt')
 
         # instantiate new return
         smoldyn_run = SmoldynRun(
@@ -237,8 +230,8 @@ async def run_smoldyn(
         )
 
         # insert job
-        pending_job = await db_connector.write(
-            collection_name=JOB_COLLECTION_NAME,
+        pending_job = await db_conn_gateway.write(
+            collection_name=DEFAULT_JOB_COLLECTION_NAME,
             job_id=smoldyn_run.job_id,
             timestamp=smoldyn_run.timestamp,
             status=smoldyn_run.status,
@@ -319,7 +312,7 @@ async def run_readdy(
     try:
         # get job params
         job_id = "simulation-execution-readdy" + str(uuid.uuid4())
-        _time = db_connector.timestamp()
+        _time = db_conn_gateway.timestamp()
 
         # instantiate new return
         readdy_run = ReaddyRun(
@@ -338,8 +331,8 @@ async def run_readdy(
         )
 
         # insert job
-        pending_job = await db_connector.write(
-            collection_name=JOB_COLLECTION_NAME,
+        pending_job = await db_conn_gateway.write(
+            collection_name=DEFAULT_JOB_COLLECTION_NAME,
             box_size=readdy_run.box_size,
             job_id=readdy_run.job_id,
             timestamp=readdy_run.timestamp,
@@ -371,7 +364,7 @@ async def run_readdy(
     summary='Get the results of an existing simulation run.')
 async def get_output(job_id: str):
     # get the job
-    job = await db_connector.read(collection_name=JOB_COLLECTION_NAME, job_id=job_id)
+    job = await db_conn_gateway.read(collection_name=DEFAULT_JOB_COLLECTION_NAME, job_id=job_id)
 
     # parse id and return if job exist
     if job is not None:
@@ -401,7 +394,7 @@ async def get_output_file(job_id: str):
     if not job_id.startswith("simulation-execution"):
         raise HTTPException(status_code=404, detail="This must be an output file job query starting with 'simulation-execution'.")
 
-    job = await db_connector.read(collection_name="completed_jobs", job_id=job_id)
+    job = await db_conn_gateway.read(collection_name="completed_jobs", job_id=job_id)
     if job is not None:
         # rm mongo index
         job.pop('_id', None)
@@ -412,22 +405,22 @@ async def get_output_file(job_id: str):
             remote_fp = job_data.get("results").get("results_file")
             if remote_fp is not None:
                 temp_dest = mkdtemp()
-                local_fp = download_file_from_bucket(source_blob_path=remote_fp, out_dir=temp_dest, bucket_name=BUCKET_NAME)
+                local_fp = download_file_from_bucket(source_blob_path=remote_fp, out_dir=temp_dest, bucket_name=DEFAULT_BUCKET_NAME)
 
                 # return downloadable file blob
                 return FileResponse(path=local_fp, media_type="application/octet-stream", filename=local_fp.split("/")[-1])  # TODO: return special smoldyn file instance
 
     # state-case: job has failed
     if job is None:
-        job = await db_connector.read(collection_name="failed_jobs", job_id=job_id)
+        job = await db_conn_gateway.read(collection_name="failed_jobs", job_id=job_id)
 
     # state-case: job is not in completed:
     if job is None:
-        job = await db_connector.read(collection_name="in_progress_jobs", job_id=job_id)
+        job = await db_conn_gateway.read(collection_name="in_progress_jobs", job_id=job_id)
 
     # state-case: job is not in progress:
     if job is None:
-        job = await db_connector.read(collection_name="pending_jobs", job_id=job_id)
+        job = await db_conn_gateway.read(collection_name="pending_jobs", job_id=job_id)
 
     # case: job is either failed, in prog, or pending
     if job is not None:
@@ -460,7 +453,7 @@ async def get_output_file(job_id: str):
 #     # TODO: refactor this!
 #
 #     # state-case: job is completed
-#     job = await db_connector.read(collection_name="completed_jobs", job_id=job_id)
+#     job = await db_conn_gateway.read(collection_name="completed_jobs", job_id=job_id)
 #     if job is not None:
 #         job.pop('_id', None)
 #         job_data = job
@@ -480,18 +473,18 @@ async def get_output_file(job_id: str):
 #
 #     # state-case: job has failed
 #     if job is None:
-#         job = await db_connector.read(collection_name="failed_jobs", job_id=job_id)
+#         job = await db_conn_gateway.read(collection_name="failed_jobs", job_id=job_id)
 #         if job is not None:
 #             job.pop('_id', None)
 #             return {'content': job}
 #
 #     # state-case: job is not in completed:
 #     if job is None:
-#         job = await db_connector.read(collection_name="in_progress_jobs", job_id=job_id)
+#         job = await db_conn_gateway.read(collection_name="in_progress_jobs", job_id=job_id)
 #
 #     # state-case: job is not in progress:
 #     if job is None:
-#         job = await db_connector.read(collection_name="pending_jobs", job_id=job_id)
+#         job = await db_conn_gateway.read(collection_name="pending_jobs", job_id=job_id)
 #
 #     # return-case: job exists as either completed, failed, in_progress, or pending
 #     if not isinstance(job, type(None)):
@@ -569,9 +562,9 @@ async def generate_simularium_file(
         agent_parameters: AgentParameters = Body(default=None, description="Parameters for the simularium agents defining either radius or mass and density.")
 ):
     job_id = "files-generate-simularium-file" + str(uuid.uuid4())
-    _time = db_connector.timestamp()
+    _time = db_conn_gateway.timestamp()
     # upload_prefix, bucket_prefix = file_upload_prefix(job_id)
-    uploaded_file_location = await write_uploaded_file(job_id=job_id, uploaded_file=uploaded_file, bucket_name=BUCKET_NAME, extension='.txt')
+    uploaded_file_location = await write_uploaded_file(job_id=job_id, uploaded_file=uploaded_file, bucket_name=DEFAULT_BUCKET_NAME, extension='.txt')
 
     # new simularium job in db
     if filename is None:
@@ -582,8 +575,8 @@ async def generate_simularium_file(
         for agent_param in agent_parameters.agents:
             agent_params[agent_param.name] = agent_param.model_dump()
 
-    new_job_submission = await db_connector.write(
-        collection_name=JOB_COLLECTION_NAME,
+    new_job_submission = await db_conn_gateway.write(
+        collection_name=DEFAULT_JOB_COLLECTION_NAME,
         status=JobStatus.PENDING.value,
         job_id=job_id,
         timestamp=_time,
@@ -610,7 +603,7 @@ async def generate_simularium_file(
     summary="Get the composite spec of a given simulation run indexed by job_id.")
 async def get_composition_state(job_id: str):
     try:
-        spec = await db_connector.read(collection_name="result_states", job_id=job_id)
+        spec = await db_conn_gateway.read(collection_name="result_states", job_id=job_id)
         if "_id" in spec.keys():
             spec.pop("_id")
 
