@@ -101,16 +101,8 @@ async def load_arrows(timer):
         print(disp)
 
 
-def get_project_version() -> str:
+def get_project_attribute(attribute: str):
     import toml
-    # root_dirpath = os.path.dirname(
-    #     os.path.abspath(
-    #         os.path.dirname(
-    #             os.path.abspath(__file__)
-    #         )
-    #     )
-    # )
-
     current_filename = os.path.abspath(__file__)
     shared_dirpath = os.path.abspath(
         os.path.dirname(current_filename)
@@ -118,4 +110,8 @@ def get_project_version() -> str:
     root_dirpath = os.path.dirname(shared_dirpath)
     pyproject_fp = os.path.join(root_dirpath, "pyproject.toml")
 
-    return toml.load(pyproject_fp)['tool']['poetry']['version']
+    return toml.load(pyproject_fp)['tool']['poetry'][attribute]
+
+
+def get_project_version() -> str:
+    return get_project_attribute("version")
