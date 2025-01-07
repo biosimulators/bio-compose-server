@@ -1,8 +1,7 @@
-FROM ghcr.io/biosimulators/bio-compose-server-base:latest
+FROM ghcr.io/biosimulators/bio-compose-server-base:0.0.1
 
 # redundant line to ensure latest worker content; comment out if you don't want this
 COPY ./shared /bio-compose-server/shared
 COPY ./worker /bio-compose-server/worker
 
-# ENTRYPOINT ["conda run -n server python worker/main.py"]
-CMD ["conda", "run", "-n", "server", "python", "worker/main.py"]
+CMD ["source", "/.bashrc", "&&", "python3", "worker/main.py"]

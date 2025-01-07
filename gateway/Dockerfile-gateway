@@ -1,3 +1,7 @@
-FROM ghcr.io/biosimulators/bio-compose-server-base:latest
+FROM ghcr.io/biosimulators/bio-compose-server-base:0.0.1
 
-# ENTRYPOINT ["conda run -n server uvicorn gateway.main:app --host 0.0.0.0 --port 3001 --reload"]
+# redundant line to ensure latest gateway content; comment out if you don't want this
+COPY ./shared /bio-compose-server/shared
+COPY ./worker /bio-compose-server/gateway
+
+CMD ["source", "/.bashrc", "&&", "uvicorn", "gateway.main:app", "--host", "0.0.0.0", "--port", "3001", "--reload"]
