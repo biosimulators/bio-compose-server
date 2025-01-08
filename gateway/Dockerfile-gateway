@@ -1,10 +1,11 @@
 FROM ghcr.io/biosimulators/bio-compose-server-base:0.0.1-dev
 
 # redundant line to ensure latest gateway content; comment out if you don't want this
-RUN rm -rf /bio-compose-server/shared \
-    && rm -rf /bio-compose-server/gateway
-COPY ./shared /bio-compose-server/shared
-COPY ./gateway /bio-compose-server/gateway
+# UN rm -rf /bio-compose-server/shared \
+#    && rm -rf /bio-compose-server/gateway
+# OPY ./shared /bio-compose-server/shared
+# OPY ./gateway /bio-compose-server/gateway
+RUN conda run -n server pip install python-libsbml
 
 WORKDIR /bio-compose-server/gateway
 

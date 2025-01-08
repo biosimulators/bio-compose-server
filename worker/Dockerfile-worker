@@ -5,6 +5,7 @@ FROM ghcr.io/biosimulators/bio-compose-server-base:0.0.1-dev
 #     && rm -rf /bio-compose-server/worker
 # COPY ./shared /bio-compose-server/shared
 # COPY ./worker /bio-compose-server/worker
+RUN conda run -n server pip install python-libsbml
 
 ENTRYPOINT ["/entrypoint.sh"]
 
