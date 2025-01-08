@@ -4,24 +4,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  get-image-root:
-    runs-on: ubuntu-latest
-    outputs:
-      IMG_ROOT: ${{ steps.get-image-root.outputs.IMG_ROOT }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Get image root
-        id: get-image-root
-        run: |
-          IMG_ROOT=ghcr.io/biosimulators/bio-compose-server
-          echo "IMG_ROOT=$IMG_ROOT" >> $GITHUB_ENV
-          echo "IMG_ROOT=$IMG_ROOT" >> $GITHUB_OUTPUT
-
   deploy-base:
     runs-on: ubuntu-latest
-    needs: get-image-root
+    environment: pipeline-env
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -35,43 +20,44 @@ jobs:
         env:
           BIOSIMULATIONS_GCLOUD_CONFIG: ${{ secrets.BIO_JSON_CONTENT }}
 
+      # - name: Deploy Base image
+      #   run: |
+      #     BASE_VERSION=$(cat ./assets/docker/.BASE_VERSION)
+      #     BASE_IMG="${{ vars.IMG_ROOT }}-base:$BASE_VERSION-dev"
+      #     docker build --no-cache -f ./Dockerfile -t $BASE_IMG .
+      #     docker push $BASE_IMG
       - name: Deploy Base image
         run: |
           BASE_VERSION=$(cat ./assets/docker/.BASE_VERSION)
-          BASE_IMG="${{ needs.get-image-root.outputs.IMG_ROOT }}-base:$BASE_VERSION-dev"
-          docker build --no-cache -f ./Dockerfile -t $BASE_IMG .
-          docker push $BASE_IMG
+          BASE_IMG="${{ vars.IMG_ROOT }}-base:$BASE_VERSION-dev"
+          echo "BASE_IMG=$BASE_IMG"
+    
 
-  deploy-gateway:
-    needs: deploy-base
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Log in to GHCR
-        run: echo "${{ secrets.REPO_ADMIN_GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.REPO_ADMIN_GH_USERNAME }}" --password-stdin
-
-      - name: Build gateway service
-        run: |
-          GATEWAY_VERSION=$(python -B .github/parse_container_version.py gateway)
-          GATEWAY_IMG="${{ needs.get-image-root.outputs.IMG_ROOT }}-gateway:$GATEWAY_VERSION-dev"
-          docker build --no-cache -f ./gateway/Dockerfile-gateway -t $GATEWAY_IMG .
-          docker push $GATEWAY_IMG
-
-  deploy-worker:
-    needs: deploy-gateway
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Log in to GHCR
-        run: echo "${{ secrets.REPO_ADMIN_GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.REPO_ADMIN_GH_USERNAME }}" --password-stdin
-
-      - name: Build worker service
-        run: |
-          WORKER_VERSION=$(python -B .github/parse_container_version.py worker)
-          WORKER_IMG="${{ needs.get-image-root.outputs.IMG_ROOT }}-worker:$WORKER_VERSION-dev"
-          docker build --no-cache -f ./worker/Dockerfile-worker -t $WORKER_IMG .
-          docker push $WORKER_IMG
+  # deploy-gateway:
+  #   needs: deploy-base
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v2
+  #     - name: Log in to GHCR
+  #       run: echo "${{ secrets.REPO_ADMIN_GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.REPO_ADMIN_GH_USERNAME }}" --password-stdin
+  #     - name: Build gateway service
+  #       run: |
+  #         GATEWAY_VERSION=$(python -B .github/parse_container_version.py gateway)
+  #         GATEWAY_IMG="${{ needs.get-image-root.outputs.IMG_ROOT }}-gateway:$GATEWAY_VERSION-dev"
+  #         docker build --no-cache -f ./gateway/Dockerfile-gateway -t $GATEWAY_IMG .
+  #         docker push $GATEWAY_IMG
+  # deploy-worker:
+  #   needs: deploy-gateway
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v2
+  #     - name: Log in to GHCR
+  #       run: echo "${{ secrets.REPO_ADMIN_GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.REPO_ADMIN_GH_USERNAME }}" --password-stdin
+  #     - name: Build worker service
+  #       run: |
+  #         WORKER_VERSION=$(python -B .github/parse_container_version.py worker)
+  #         WORKER_IMG="${{ needs.get-image-root.outputs.IMG_ROOT }}-worker:$WORKER_VERSION-dev"
+  #         docker build --no-cache -f ./worker/Dockerfile-worker -t $WORKER_IMG .
+  #         docker push $WORKER_IMG
