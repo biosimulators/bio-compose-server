@@ -55,53 +55,53 @@ jobs:
         run: |
           echo "$BASE_IMG"
 
-#       - name: Create gcloud config
-#         run: |
-#           echo "$BIOSIMULATIONS_GCLOUD_CONFIG" > ./assets/docker/config/.biosimulations.json
-#         env:
-#           BIOSIMULATIONS_GCLOUD_CONFIG: ${{ secrets.BIO_JSON_CONTENT }}
-#
-#       - name: Build base image
-#         run: |
-#           docker build --no-cache -f ./Dockerfile -t $BASE_IMG .
-#
-#       - name: Deploy new base version to GHCR
-#         run: |
-#           docker push $BASE_IMG
-#
-#   deploy-gateway:
-#     needs: deploy-base
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v2
-#
-#       - name: Log in to GHCR
-#         run: echo "${{ secrets.REPO_ADMIN_GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.REPO_ADMIN_GH_USERNAME }}" --password-stdin
-#
-#       - name: Build gateway service
-#         run: |
-#           docker build --no-cache -f ./gateway/Dockerfile-gateway -t $GATEWAY_IMG .
-#
-#       - name: Deploy gateway to GHCR with current version
-#         run: |
-#           docker push $GATEWAY_IMG
-#
-#   deploy-worker:
-#     needs: deploy-gateway
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v2
-#
-#       - name: Log in to GHCR
-#         run: echo "${{ secrets.REPO_ADMIN_GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.REPO_ADMIN_GH_USERNAME }}" --password-stdin
-#
-#       - name: Build worker service
-#         run: |
-#           docker build --no-cache -f ./worker/Dockerfile-worker -t $WORKER_IMG .
-#
-#       - name: Deploy worker to GHCR with current version
-#         run: |
-#           docker push $WORKER_IMG
-#
+      - name: Create gcloud config
+        run: |
+          echo "$BIOSIMULATIONS_GCLOUD_CONFIG" > ./assets/docker/config/.biosimulations.json
+        env:
+          BIOSIMULATIONS_GCLOUD_CONFIG: ${{ secrets.BIO_JSON_CONTENT }}
+
+      - name: Build base image
+        run: |
+          docker build --no-cache -f ./Dockerfile -t $BASE_IMG .
+
+      - name: Deploy new base version to GHCR
+        run: |
+          docker push $BASE_IMG
+
+  deploy-gateway:
+    needs: deploy-base
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.REPO_ADMIN_GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.REPO_ADMIN_GH_USERNAME }}" --password-stdin
+
+      - name: Build gateway service
+        run: |
+          docker build --no-cache -f ./gateway/Dockerfile-gateway -t $GATEWAY_IMG .
+
+      - name: Deploy gateway to GHCR with current version
+        run: |
+          docker push $GATEWAY_IMG
+
+  deploy-worker:
+    needs: deploy-gateway
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.REPO_ADMIN_GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.REPO_ADMIN_GH_USERNAME }}" --password-stdin
+
+      - name: Build worker service
+        run: |
+          docker build --no-cache -f ./worker/Dockerfile-worker -t $WORKER_IMG .
+
+      - name: Deploy worker to GHCR with current version
+        run: |
+          docker push $WORKER_IMG
