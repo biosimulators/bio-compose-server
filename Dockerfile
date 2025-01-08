@@ -76,7 +76,6 @@ RUN conda update -n base -c conda-forge conda \
 # && conda install -c conda-forge pymem3dg -y \
 # && echo 'export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:\$LD_LIBRARY_PATH' >> ~/.bashrc
 
-
 COPY ./shared/scripts/entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh
