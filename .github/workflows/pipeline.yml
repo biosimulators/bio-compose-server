@@ -20,19 +20,18 @@ jobs:
         env:
           BIOSIMULATIONS_GCLOUD_CONFIG: ${{ secrets.BIO_JSON_CONTENT }}
 
+      - name: Deploy Base image
+        run: |
+          BASE_VERSION=$(cat ./assets/docker/.BASE_VERSION)
+          BASE_IMG="${{ vars.IMG_ROOT }}-base:$BASE_VERSION-dev"
+          echo "$BASE_IMG"
+    
       # - name: Deploy Base image
       #   run: |
       #     BASE_VERSION=$(cat ./assets/docker/.BASE_VERSION)
       #     BASE_IMG="${{ vars.IMG_ROOT }}-base:$BASE_VERSION-dev"
       #     docker build --no-cache -f ./Dockerfile -t $BASE_IMG .
       #     docker push $BASE_IMG
-      - name: Deploy Base image
-        run: |
-          BASE_VERSION=$(cat ./assets/docker/.BASE_VERSION)
-          BASE_IMG="${{ vars.IMG_ROOT }}-base:$BASE_VERSION-dev"
-          echo "BASE_IMG=$BASE_IMG"
-    
-
   # deploy-gateway:
   #   needs: deploy-base
   #   runs-on: ubuntu-latest
