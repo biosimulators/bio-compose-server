@@ -15,8 +15,8 @@ services:
       # dockerfile: Dockerfile
     image: ghcr.io/biosimulators/bio-compose-server-gateway:0.0.1
     container_name: gateway
-    ports:
-      - "3001:3001"
+    # ports:
+    #   - "3001:3001"
     networks:
       - appnetwork
     # command: conda run -n server uvicorn gateway.main:app --host 0.0.0.0 --port 3001 --reload
