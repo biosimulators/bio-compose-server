@@ -1,7 +1,15 @@
 FROM ghcr.io/biosimulators/bio-compose-server-base:0.0.1
 
 # redundant line to ensure latest gateway content; comment out if you don't want this
+RUN rm -rf /bio-compose-server/shared \
+    && rm -rf /bio-compose-server/gateway
+
 COPY ./shared /bio-compose-server/shared
 COPY ./worker /bio-compose-server/gateway
 
-CMD ["source", "/.bashrc", "&&", "uvicorn", "gateway.main:app", "--host", "0.0.0.0", "--port", "3001", "--reload"]
+COPY ./shared/scripts/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["uvicorn", "gateway.main:app", "--host", "0.0.0.0", "--port", "3001", "--reload"]
+
+# CMD ["source", "/.bashrc", "&&", "uvicorn", "gateway.main:app", "--host", "0.0.0.0", "--port", "3001", "--reload"]

@@ -30,6 +30,7 @@ dispatcher = JobDispatcher(connection_uri=MONGO_URI, database_id=DEFAULT_DB_NAME
 
 async def main(max_retries=MAX_RETRIES):
     n_retries = 0
+    print(f'Confirming connection to {MONGO_URI}: {dispatcher.db_connector.confirm_connection()}')
     while True:
         # no job has come in a while
         if n_retries == MAX_RETRIES:
