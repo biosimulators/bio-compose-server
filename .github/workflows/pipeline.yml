@@ -15,7 +15,7 @@ jobs:
 
       - name: Get base image tag and version
         run: |
-          BASE_VERSION=$(cat ./assets/docker/.BASE_VERSION)
+          BASE_VERSION=$(cat ./assets/docker/.BASE_VERSION_DEV)
           echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
           BASE_IMG=ghcr.io/biosimulators/bio-compose-server-base
           echo "BASE_IMG=$BASE_IMG" >> $GITHUB_ENV
@@ -52,7 +52,7 @@ jobs:
       - name: Extract API container version
         id: extract_api_version
         run: |
-          API_VERSION=$(python -B .github/parse_container_version.py gateway)
+          API_VERSION=$(python -B .github/parse_container_version.py gateway 1)
           echo "API_VERSION=$API_VERSION" >> $GITHUB_ENV
           echo "API Version: $API_VERSION"
 
@@ -60,7 +60,7 @@ jobs:
       - name: Extract worker container version
         id: extract_worker_version
         run: |
-          WORKER_VERSION=$(python -B .github/parse_container_version.py worker)
+          WORKER_VERSION=$(python -B .github/parse_container_version.py worker 1)
           echo "WORKER_VERSION=$WORKER_VERSION" >> $GITHUB_ENV
           echo "WORKER Version: $WORKER_VERSION"
 
@@ -104,9 +104,6 @@ jobs:
 
       - name: Build API microservice image
         run: |
-          rm -f gateway/spec/openapi_3_1_0_generated.yaml 
-          python -B gateway/openapi_spec.py
-          sudo rm -rf gateway/__pycache__
           docker-compose build gateway
 
       - name: Deploy API microservice container to GHCR
@@ -118,7 +115,6 @@ jobs:
 
       - name: Build worker microservice image
         run: |
-          sudo rm -rf worker/__pycache__
           docker-compose build worker
 
       - name: Deploy worker microservice container to GHCR
