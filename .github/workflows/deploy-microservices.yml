@@ -66,8 +66,6 @@ jobs:
 
       - name: Build API microservice image
         run: |
-          rm -f gateway/spec/openapi_3_1_0_generated.yaml 
-          python -B gateway/openapi_spec.py
           sudo rm -rf gateway/__pycache__
           docker-compose build gateway
 

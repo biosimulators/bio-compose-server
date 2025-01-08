@@ -17,6 +17,7 @@ The general workflow should be:
 10. worker: update job document ['results'] field with #8's data
 11. worker: perhaps emit an event?
 """
+import asyncio
 import json
 import subprocess
 import tempfile
@@ -30,7 +31,7 @@ from process_bigraph import Composite
 from shared.database import MongoConnector
 from shared.dynamic_env import install_request_dependencies
 from shared.log_config import setup_logging
-
+from shared.environment import DEFAULT_LOCAL_MONGO_URI, DEFAULT_DB_NAME, DEFAULT_DB_TYPE, DEFAULT_JOB_COLLECTION_NAME
 
 logger = setup_logging(__file__)
 
@@ -54,18 +55,26 @@ class JobDispatcher(object):
 
     async def run(self):
         # iterate over all jobs
-        for job in self.current_jobs:
-            await self.dispatch(job)
+        print('checking jobs...')
+        i = 0
+        while i < 5:
+            for job in self.current_jobs:
+                await self.dispatch(job)
+            i += 1
+            print('sleeping')
+            await asyncio.sleep(1)
 
     @staticmethod
     def generate_failed_job(job_id: str, msg: str):
         return {"job_id": job_id, "status": "FAILED", "result": msg}
 
     async def dispatch(self, job: Mapping[str, Any]):
+        # TODO: add try blocks for each section
         job_status = job["status"]
         if job_status.lower() != "pending":
             # 1. set job id
             job_id = job["job_id"]
+            print(f'Dispatching job {job_id}...')
 
             # 2. determine sims needed
             simulators = job["simulators"]
@@ -104,12 +113,11 @@ class JobDispatcher(object):
 
             # 10. add new result state in db within result_states collection!
             temp_dir = tempfile.mkdtemp()
-            temp_fname= f"{job}.state.json"
+            temp_fname = f"{job}.state.json"
             composition.save(filename=temp_fname, outdir=temp_dir)
             temp_path = os.path.join(temp_dir, temp_fname)
             with open(temp_path, 'r') as f:
                 current_data = json.load(f)
-
             await self.db_connector.write(
                 collection_name="result_states",
                 job_id=job_id,
@@ -117,10 +125,37 @@ class JobDispatcher(object):
                 last_updated=self.db_connector.timestamp()
             )
 
+            # 11. remove composite state file artifact
             os.remove(temp_path) if os.path.exists(temp_path) else None
-
-            # 11.
 
 
 def test_dispatcher():
-    pass
+    from shared.data_model import CompositionRun
+    import asyncio
+
+    dispatcher = JobDispatcher(connection_uri=DEFAULT_LOCAL_MONGO_URI, database_id=DEFAULT_DB_NAME)
+    jid = "test"
+
+    test_run = CompositionRun(
+        job_id=jid,
+        last_updated="n/a",
+        simulators=['copasi'],
+        duration=1,
+        spec={'a': {}},
+        status="PENDING",
+        results={}
+    )
+
+    confirmation = asyncio.run(
+        dispatcher.db_connector.write(collection_name=DEFAULT_JOB_COLLECTION_NAME, **test_run.to_dict())
+    )
+
+    print(f'STORED: {confirmation}')
+
+    asyncio.run(
+        dispatcher.run()
+    )
+
+
+
+

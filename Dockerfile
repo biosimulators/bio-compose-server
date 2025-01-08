@@ -1,5 +1,4 @@
 FROM condaforge/miniforge3:latest
-# FROM continuumio/miniconda3:main
 
 LABEL org.opencontainers.image.title="bio-compose-server-base" \
     org.opencontainers.image.description="Base Docker image for BioCompose REST API management, job processing, and datastorage with MongoDB, ensuring scalable and robust performance." \
@@ -9,6 +8,9 @@ LABEL org.opencontainers.image.title="bio-compose-server-base" \
     org.opencontainers.image.vendor="BioSimulators Team"
 
 ENV DEBIAN_FRONTEND=noninteractive
+
+# expose for gateway
+EXPOSE 3001
 
 # copy assets
 COPY assets/docker/config/.biosimulations.json /.google/.bio-compose.json
@@ -62,9 +64,8 @@ RUN mkdir config \
 RUN conda update -n base -c conda-forge conda \
     && conda env create -f /bio-compose-server/environment.yml -y \
     && conda run -n server pip install --upgrade pip \
-    && echo "conda activate server" >> /.bashrc
-
-RUN conda run -n server poetry config virtualenvs.create false \
+    && echo "conda activate server" >> /.bashrc \
+    && conda run -n server poetry config virtualenvs.create false \
     && conda run -n server poetry lock \
     && conda run -n server poetry install
 
@@ -75,7 +76,9 @@ RUN conda run -n server poetry config virtualenvs.create false \
 # && conda install -c conda-forge pymem3dg -y \
 # && echo 'export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:\$LD_LIBRARY_PATH' >> ~/.bashrc
 
-# expose for gateway
-EXPOSE 3001
 
-CMD ["source", "/.bashrc", "python", "--version"]
+COPY ./shared/scripts/entrypoint.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

@@ -5,21 +5,17 @@ services:
     ports:
       - "27017:27017"
     networks:
-      - appnetwork
+      - compnet
 
   gateway:
     platform: linux/amd64
     build:
       context: .
       dockerfile: ./gateway/Dockerfile-gateway
-      # dockerfile: Dockerfile
     image: ghcr.io/biosimulators/bio-compose-server-gateway:0.0.1
     container_name: gateway
-    # ports:
-    #   - "3001:3001"
     networks:
-      - appnetwork
-    # command: conda run -n server uvicorn gateway.main:app --host 0.0.0.0 --port 3001 --reload
+      - compnet
     depends_on:
       - mongodb
 
@@ -28,15 +24,13 @@ services:
     build:
       context: .
       dockerfile: ./worker/Dockerfile-worker
-      # dockerfile: Dockerfile
     image: ghcr.io/biosimulators/bio-compose-server-worker:0.0.1
     container_name: worker
     networks:
-      - appnetwork
-    # command: conda run -n server python worker/main.py
+      - compnet
     depends_on:
       - mongodb
 
 networks:
-  appnetwork:
+  compnet:
     driver: bridge

@@ -8,8 +8,9 @@ COPY ./shared /bio-compose-server/shared
 COPY ./worker /bio-compose-server/worker
 
 # CMD ["bash", "-c", "source /.bashrc && python3 worker/main.py"]
-COPY ./shared/scripts/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+# COPY ./shared/scripts/entrypoint.sh /entrypoint.sh
+# RUN chmod +x /entrypoint.sh
+# ENTRYPOINT ["/entrypoint.sh"]
+
 CMD ["python3", "worker/main.py"]
 
