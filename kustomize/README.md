@@ -165,19 +165,19 @@ echo "127.0.0.1 minikube.local" | sudo tee -a /etc/hosts
 ### verify the kustomization scripts
 
 ```bash
-kubectl create namespace dev
-kubectl kustomize overlays/dev | kubectl apply --dry-run=client --validate=true -f -
+kubectl create namespace compose
+kubectl kustomize overlays/compose | kubectl apply --dry-run=client --validate=true -f -
 ```
 
 ### apply the kustomization scripts
 
 ```bash
-kubectl kustomize overlays/dev | kubectl apply -f -
+kubectl kustomize overlays/compose | kubectl apply -f -
 ```
 
 ### Wipe 
 ```bash
-kubectl kustomize overlays/dev | kubectl delete -f -
+kubectl kustomize overlays/compose | kubectl delete -f -
 ```
 
 ### create sealed secrets (see [scripts/README.md](scripts/README.md))
@@ -195,7 +195,7 @@ sudo minikube tunnel
 
 2. Apply dev overlays:
 ```bash
-kubectl kustomize overlays/dev | kubectl apply -f -
+kubectl kustomize overlays/compose | kubectl apply -f -
 ```
 
 2a. Apply **BioCompose Server** overlays:

@@ -8,9 +8,9 @@ images:
 - name: mongo
   newTag: 8.0-rc
 - name: ghcr.io/biosimulators/bio-compose-server-gateway
-  newTag: 0.0.1
+  newTag: 0.0.1-dev
 - name: ghcr.io/biosimulators/bio-compose-server-worker
-  newTag: 0.0.1
+  newTag: 0.0.1-dev
 
 replicas:
 - count: 1
