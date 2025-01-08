@@ -12,13 +12,16 @@ if [ "$version" == "" ]; then
   explicit_version=0
 fi
 
-# push version to GHCR
-docker tag compose-server-"$lib":"$version" ghcr.io/biosimulators/compose-server-"$lib":"$version"
-docker push ghcr.io/biosimulators/compose-server-"$lib":"$version"
+img_name=ghcr.io/biosimulators/bio-compose-server-"$lib"
+current_img="$img_name":"$version"
+latest_img="$img_name":latest
+
+# push current img version
+docker push "$current_img"
 
 # push newest latest to GHCR
-docker tag ghcr.io/biosimulators/compose-server-"$lib":"$version" ghcr.io/biosimulators/compose-server-"$lib":latest
-docker push ghcr.io/biosimulators/compose-server-"$lib":latest
+docker tag "$current_img" "$latest_img"
+docker push "$latest_img"
 
 # handle version
 if [ "$lib" == "base" ]; then
