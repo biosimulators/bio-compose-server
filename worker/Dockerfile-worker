@@ -1,10 +1,19 @@
 FROM ghcr.io/biosimulators/bio-compose-server-base:0.0.1-dev
 
+LABEL org.opencontainers.image.title="bio-compose-server-worker" \
+    org.opencontainers.image.description="Base Docker image for BioCompose REST API management, job processing, and datastorage with MongoDB, ensuring scalable and robust performance." \
+    org.opencontainers.image.url="https://compose.biosimulators.org/" \
+    org.opencontainers.image.source="https://github.com/biosimulators/bio-compose-server" \
+    org.opencontainers.image.authors="Alexander Patrie <apatrie@uchc.edu>, BioSimulators Team <info@biosimulators.org>" \
+    org.opencontainers.image.vendor="BioSimulators Team"
+
 # redundant line to ensure latest worker content; comment out if you don't want this
 # RUN rm -rf /bio-compose-server/shared \
 #     && rm -rf /bio-compose-server/worker
 # COPY ./shared /bio-compose-server/shared
 # COPY ./worker /bio-compose-server/worker
+
+ENV MONGO_URI=mongodb://localhost:27017
 
 ENTRYPOINT ["/entrypoint.sh"]
 

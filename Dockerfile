@@ -10,7 +10,7 @@ LABEL org.opencontainers.image.title="bio-compose-server-base" \
 ENV DEBIAN_FRONTEND=noninteractive
 
 # expose for gateway
-EXPOSE 3001
+# EXPOSE 3001
 
 # copy assets
 COPY assets/docker/config/.biosimulations.json /.google/.bio-compose.json
