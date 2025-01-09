@@ -5,27 +5,26 @@ import logging
 from dotenv import load_dotenv
 
 from shared.database import MongoConnector
-from shared.environment import ENV_PATH, DEFAULT_DB_NAME, DEFAULT_LOCAL_MONGO_URI
+from shared.environment import ENV_PATH, DEFAULT_DB_NAME
 from shared.log_config import setup_logging
 from worker.job import JobDispatcher
 
 
-# set up dev env if possible
 load_dotenv(ENV_PATH)  # NOTE: create an env config at this filepath if dev
+
 
 # logging
 logger = setup_logging(__file__)
 
-
-# sleep params
+# constraints
 DELAY_TIMER = 20
 MAX_RETRIES = 30
-
-# creds params
-MONGO_URI = os.getenv("MONGO_URI", DEFAULT_LOCAL_MONGO_URI)
+MONGO_URI = os.getenv("MONGO_URI")
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-# db_connector = MongoConnector(connection_uri=MONGO_URI, database_id=DB_NAME)
-dispatcher = JobDispatcher(connection_uri=MONGO_URI, database_id=DEFAULT_DB_NAME)
+
+# singletons
+db_connector = MongoConnector(connection_uri=MONGO_URI, database_id=DEFAULT_DB_NAME)
+dispatcher = JobDispatcher(db_connector=db_connector)
 
 
 async def main(max_retries=MAX_RETRIES):

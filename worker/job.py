@@ -38,15 +38,14 @@ logger = setup_logging(__file__)
 
 class JobDispatcher(object):
     def __init__(self,
-                 connection_uri: str,
-                 database_id: str,
+                 db_connector: MongoConnector,
                  timeout: int = 5):
         """
         :param connection_uri: mongodb connection URI
         :param database_id: mongodb database ID
         :param timeout: number of minutes for timeout. Default is 5 minutes
         """
-        self.db_connector = MongoConnector(connection_uri=connection_uri, database_id=database_id)
+        self.db_connector = db_connector
         self.timeout = timeout * 60
 
     @property

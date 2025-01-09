@@ -13,7 +13,7 @@ services:
     # build:
     #   context: .
     #   dockerfile: ./gateway/Dockerfile-gateway
-    image: ghcr.io/biosimulators/bio-compose-server-gateway:0.0.1
+    image: ghcr.io/biosimulators/bio-compose-server-gateway:0.0.1-dev
     container_name: gateway
     networks:
       - compnet
@@ -26,7 +26,7 @@ services:
     # build:
     #   context: .
     #   dockerfile: ./worker/Dockerfile-worker
-    image: ghcr.io/biosimulators/bio-compose-server-worker:0.0.1
+    image: ghcr.io/biosimulators/bio-compose-server-worker:0.0.1-dev
     container_name: worker
     networks:
       - compnet
