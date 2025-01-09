@@ -31,7 +31,7 @@ jobs:
       - name: Deploy Base image
         run: |
           BASE_VERSION=$(cat ./assets/docker/.BASE_VERSION)
-          BASE_IMG="${{ vars.IMG_ROOT }}-base:$BASE_VERSION-dev"
+          BASE_IMG="${{ vars.IMG_ROOT }}-base:$BASE_VERSION"
           docker build --no-cache -f ./Dockerfile -t $BASE_IMG .
           docker push $BASE_IMG
 
