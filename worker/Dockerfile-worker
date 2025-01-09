@@ -1,4 +1,4 @@
-FROM ghcr.io/biosimulators/bio-compose-server-base:0.0.1-dev
+FROM ghcr.io/biosimulators/bio-compose-server-base:0.0.2-dev
 
 LABEL org.opencontainers.image.title="bio-compose-server-worker" \
     org.opencontainers.image.description="Base Docker image for BioCompose REST API management, job processing, and datastorage with MongoDB, ensuring scalable and robust performance." \

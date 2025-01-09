@@ -3,9 +3,10 @@
 
 # Run at root of repo!
 
-argA="$1"
+version="$1"
+push="$2"
 
-version=$(cat ./assets/docker/.BASE_VERSION)
+# version=$(cat ./assets/docker/.BASE_VERSION)
 img_name=ghcr.io/biosimulators/bio-compose-server-base:"$version"
 latest_name=ghcr.io/biosimulators/bio-compose-server-base:latest
 
@@ -16,7 +17,7 @@ echo "Built base image."
 echo "Tagging new base image as latest..."
 docker tag "$img_name" "$latest_name"
 
-if [ "$argA" == "--push" ]; then
+if [ "$push" == "--push" ]; then
   # push version to GHCR
   docker push "$img_name"
 
