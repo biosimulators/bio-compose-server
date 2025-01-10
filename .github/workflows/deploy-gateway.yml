@@ -15,6 +15,6 @@ jobs:
       - name: Build gateway service
         run: |
           GATEWAY_VERSION=$(python -B .github/parse_container_version.py gateway)
-          GATEWAY_IMG="${{ vars.IMG_ROOT }}-gateway:$GATEWAY_VERSION-dev"
+          GATEWAY_IMG="${{ vars.IMG_ROOT }}-gateway:$GATEWAY_VERSION"
           docker build --no-cache -f ./gateway/Dockerfile-gateway -t $GATEWAY_IMG .
           docker push $GATEWAY_IMG
