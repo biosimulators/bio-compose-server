@@ -147,6 +147,40 @@ async def get_process_bigraph_addresses() -> BigraphRegistryAddresses:
 
 
 @app.post(
+    "/validate-composition",
+    # response_model=CompositionRun,
+    tags=["Composition"],
+    operation_id="validate-composition",
+    summary="Submit composition spec for simulation",
+)
+async def validate_composition(
+        spec_file: UploadFile = File(..., description="Composition JSON File"),
+        simulators: List[str] = Query(..., description="Simulator package names to use for implementation"),
+        duration: int = Query(..., description="Duration of simulation"),
+):
+    from process_bigraph import Composite
+    from bsp import app_registrar
+
+    # validate filetype
+    if not spec_file.filename.endswith('.json') and spec_file.content_type != 'application/json':
+        raise HTTPException(status_code=400, detail="Invalid file type. Only JSON files are supported.")
+
+    # multifold IO verification:
+    try:
+        contents = await spec_file.read()
+        document_data: Dict = json.loads(contents)
+        composite = Composite(
+            config={'state': document_data},
+            core=app_registrar.core
+        )
+        return composite.state
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON format.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post(
     "/submit-composition",
     response_model=CompositionRun,
     tags=["Composition"],

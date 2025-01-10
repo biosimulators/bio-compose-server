@@ -26,6 +26,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BigraphRegistryAddresses'
+  /validate-composition:
+    post:
+      tags:
+      - Composition
+      summary: Submit composition spec for simulation
+      operationId: validate-composition
+      parameters:
+      - name: simulators
+        in: query
+        required: true
+        schema:
+          type: array
+          items:
+            type: string
+          description: Simulator package names to use for implementation
+          title: Simulators
+        description: Simulator package names to use for implementation
+      - name: duration
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Duration of simulation
+          title: Duration
+        description: Duration of simulation
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_validate-composition'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /submit-composition:
     post:
       tags:
@@ -149,6 +192,17 @@ components:
       required:
       - spec_file
       title: Body_submit-composition
+    Body_validate-composition:
+      properties:
+        spec_file:
+          type: string
+          format: binary
+          title: Spec File
+          description: Composition JSON File
+      type: object
+      required:
+      - spec_file
+      title: Body_validate-composition
     CompositionRun:
       properties:
         job_id:
