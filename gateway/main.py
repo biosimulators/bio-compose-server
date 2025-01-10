@@ -1,15 +1,13 @@
-import dataclasses
 import json
 import os
 import uuid
-from typing import *
-
 import dotenv
-from tempfile import mkdtemp
+from typing import *
+# from tempfile import mkdtemp
 
 import uvicorn
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query, APIRouter, Body
-from fastapi.responses import FileResponse
+# from fastapi.responses import FileResponse
 from pydantic import BeforeValidator
 from starlette.middleware.cors import CORSMiddleware
 
@@ -19,21 +17,28 @@ from shared.data_model import (
     # ReaddyParticleConfig,
     # ReaddyRun,
     # SmoldynRun,
-    DbClientResponse,
     # AgentParameters,
-    BigraphRegistryAddresses,
     # IncompleteJob,
     # JobStatus,
+    BigraphRegistryAddresses,
+    DbClientResponse,
     CompositionNode,
     CompositionSpec,
     CompositionRun,
-    OutputData
+    OutputData,
+    ValidatedComposition
 )
 from shared.database import MongoConnector
-# from shared.io import write_uploaded_file, download_file_from_bucket
 from shared.log_config import setup_logging
 from shared.utils import get_project_version
-from shared.environment import ENV_PATH, DEFAULT_DB_NAME, DEFAULT_DB_TYPE, DEFAULT_JOB_COLLECTION_NAME, DEFAULT_BUCKET_NAME
+from shared.environment import (
+    ENV_PATH,
+    DEFAULT_DB_NAME,
+    DEFAULT_DB_TYPE,
+    DEFAULT_JOB_COLLECTION_NAME,
+    DEFAULT_BUCKET_NAME
+)
+# from shared.io import write_uploaded_file, download_file_from_bucket
 
 
 logger = setup_logging(__file__)
@@ -148,7 +153,7 @@ async def get_process_bigraph_addresses() -> BigraphRegistryAddresses:
 
 @app.post(
     "/validate-composition",
-    # response_model=CompositionRun,
+    response_model=ValidatedComposition,
     tags=["Composition"],
     operation_id="validate-composition",
     summary="Validate Simulation Experiment Design specification file.",
@@ -156,8 +161,7 @@ async def get_process_bigraph_addresses() -> BigraphRegistryAddresses:
 async def validate_composition(
         spec_file: UploadFile = File(..., description="Composition JSON File"),
         simulators: List[str] = Query(..., description="Simulator package names to use for implementation"),
-        duration: int = Query(..., description="Duration of simulation"),
-):
+) -> ValidatedComposition:
     from process_bigraph import Composite
     from bsp import app_registrar
 
@@ -173,11 +177,12 @@ async def validate_composition(
             config={'state': document_data},
             core=app_registrar.core
         )
-        return {'state': composite.state}
+        return ValidatedComposition(state=composite.state, valid=True)
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON format.")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # raise HTTPException(status_code=400, detail=str(e))
+        return ValidatedComposition(state={'fail': str(e)}, valid=False)
 
 
 @app.post(

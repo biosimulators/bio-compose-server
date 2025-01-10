@@ -221,3 +221,9 @@ class OutputData(BaseClass):
     status: str
     last_updated: str
     results: Dict
+
+
+@dataclass
+class ValidatedComposition(BaseClass):
+    state: Dict[str, Any]
+    valid: bool
