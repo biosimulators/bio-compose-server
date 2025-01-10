@@ -173,7 +173,7 @@ async def validate_composition(
             config={'state': document_data},
             core=app_registrar.core
         )
-        return composite.state
+        return {'state': composite.state}
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON format.")
     except Exception as e:

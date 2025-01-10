@@ -13,7 +13,9 @@ LABEL org.opencontainers.image.title="bio-compose-server-gateway" \
 # COPY ./shared /bio-compose-server/shared
 # COPY ./gateway /bio-compose-server/gateway
 
-# WORKDIR /bio-compose-server/gateway
+RUN rm -rf /bio-compose-server/gateway
+
+COPY ./gateway /bio-compose-server/gateway
 
 ENV MONGO_URI=mongodb://localhost:27017
 
