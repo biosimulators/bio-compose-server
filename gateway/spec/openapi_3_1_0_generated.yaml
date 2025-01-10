@@ -30,7 +30,7 @@ paths:
     post:
       tags:
       - Composition
-      summary: Submit composition spec for simulation
+      summary: Validate Simulation Experiment Design specification file.
       operationId: validate-composition
       parameters:
       - name: simulators

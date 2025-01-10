@@ -151,7 +151,7 @@ async def get_process_bigraph_addresses() -> BigraphRegistryAddresses:
     # response_model=CompositionRun,
     tags=["Composition"],
     operation_id="validate-composition",
-    summary="Submit composition spec for simulation",
+    summary="Validate Simulation Experiment Design specification file.",
 )
 async def validate_composition(
         spec_file: UploadFile = File(..., description="Composition JSON File"),
