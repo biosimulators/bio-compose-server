@@ -32,28 +32,28 @@ spec:
             - name: MONGO_DB_PWD
               valueFrom:
                 secretKeyRef:
-                  name: worker-secrets
+                  name: gateway-secrets
                   key: mongo-password
             - name: MONGO_DB_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: worker-secrets
+                  name: gateway-secrets
                   key: mongo-username
             - name: GOOGLE_APPLICATION_CREDENTIALS
               valueFrom:
                 secretKeyRef:
-                  name: worker-secrets
+                  name: gateway-secrets
                   key: google-application-credentials
           ports:
             - containerPort: 3001
           volumeMounts:
-            - name: worker-secrets
-              mountPath: /run/worker-secrets
+            - name: gateway-secrets
+              mountPath: /run/gateway-secrets
       restartPolicy: Always
       imagePullSecrets:
         - name: ghcr-secret
       volumes:
-        - name: worker-secrets
+        - name: gateway-secrets
           secret:
             items:
               - key: mongo-password
@@ -62,7 +62,7 @@ spec:
                 path: mongo-username
               - key: google-application-credentials
                 path: google-application-credentials
-            secretName: worker-secrets
+            secretName: gateway-secrets
 
 ---
 apiVersion: v1

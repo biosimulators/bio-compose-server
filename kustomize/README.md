@@ -135,7 +135,7 @@ kubectl apply -f mysealedsecret.yaml
 ```bash
 brew install cmctl
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
-cmctl check gateway
+cmctl check api
 ```
 
 # Configure minikube networking for local development
