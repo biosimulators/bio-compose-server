@@ -1,0 +1,82 @@
+{
+    "status": "PENDING",
+    "spec": {
+        "ode": {
+            "_type": "process",
+            "address": "local:copasi-process",
+            "config": {
+                "model": {
+                    "model_source": "file_uploads/composition-5ec399ca-23b9-405c-bcb8-c002d4a94b1a/BorisEJB.xml"
+                }
+            },
+            "inputs": {
+                "species_counts": [
+                    "species_counts_store"
+                ],
+                "time": [
+                    "time_store"
+                ]
+            },
+            "outputs": {
+                "species_concentrations": [
+                    "species_concentrations_store"
+                ],
+                "reaction_fluxes": [
+                    "reaction_fluxes_store"
+                ],
+                "time": [
+                    "time_store"
+                ]
+            }
+        },
+        "fba": {
+            "_type": "process",
+            "address": "local:cobra-process",
+            "config": {
+                "model": {
+                    "model_source": "file_uploads/composition-5ec399ca-23b9-405c-bcb8-c002d4a94b1a/BorisEJB.xml"
+                }
+            },
+            "inputs": {
+                "reaction_fluxes": [
+                    "reaction_fluxes_store"
+                ]
+            },
+            "outputs": {
+                "fluxes": [
+                    "fluxes_store"
+                ]
+            }
+        },
+        "emitter": {
+            "_type": "step",
+            "address": "local:ram-emitter",
+            "config": {
+                "emit": {
+                    "molecules": "tree[float]",
+                    "species_concentrations": "tree[float]",
+                    "fluxes": "tree[float]"
+                }
+            },
+            "inputs": {
+                "species_concentrations": [
+                    "species_concentrations_store"
+                ],
+                "fluxes": [
+                    "fluxes_store"
+                ],
+                "molecules": [
+                    "molecules_store"
+                ]
+            }
+        }
+    },
+    "job_id": "composition-5ec399ca-23b9-405c-bcb8-c002d4a94b1a",
+    "last_updated": "2025-01-13 15:36:16.744520",
+    "simulators": [
+        "copasi",
+        "cobra"
+    ],
+    "duration": 10,
+    "results": {}
+}

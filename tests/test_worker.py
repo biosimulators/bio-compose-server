@@ -1,50 +1,59 @@
+import asyncio
 import os
-import pprint
+import json
 
 from dotenv import load_dotenv
 
-from job import VerificationWorker, generate_time_course_data
+from shared.database import MongoConnector
+from shared.environment import DEFAULT_DB_NAME, ENV_PATH, PROJECT_ROOT_PATH
+from shared.dynamic_env import create_dynamic_environment
+from shared.log_config import setup_logging
+from worker.job import JobDispatcher
 
 
-load_dotenv('../assets/dev/config/.env_dev')
+load_dotenv(ENV_PATH)
 
 MONGO_URI = os.getenv('MONGO_URI')
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 BUCKET_NAME = os.getenv('BUCKET_NAME')
 DB_NAME = os.getenv('DB_NAME')
-TEST_SBML_FP = "../test_fixtures/sbml-core/BorisEJB.xml"
+TEST_REQUEST_PATH = os.path.join(PROJECT_ROOT_PATH, 'tests', 'test_fixtures', 'test_request_without_smoldyn.json')
+
+logger = setup_logging(__file__)
+db_connector = MongoConnector(connection_uri=MONGO_URI, database_id=DEFAULT_DB_NAME)
+dispatcher = JobDispatcher(db_connector=db_connector)
 
 
-def test_files_worker(test_queue_index=0):
-    # get first job from queue
-    # job = db_connector.pending_jobs().pop(test_queue_index)
-    pass
+def test_dispatcher():
+    with open(TEST_REQUEST_PATH, 'r') as json_file:
+        test_request = json.load(json_file)
+
+    print(test_request)
 
 
-def test_generate_time_course_data():
-    results = generate_time_course_data(
-        input_fp=TEST_SBML_FP,
-        start=0,
-        end=1000,
-        steps=5,
-        simulators=['copasi', 'pysces', 'tellurium'],
-        out_dir="test_output"
-    )
-    pprint.pp(results)
+def test_dynamic_install():
+    with open(TEST_REQUEST_PATH, 'r') as json_file:
+        job = json.load(json_file)
 
-    return results
+    installation_resp = asyncio.run(dispatcher.install_simulators(job))
+    print(installation_resp)
 
 
-def test_sbml_comparison():
-    worker = VerificationWorker({'job_id': 'verification-test'})
-    # result = worker._run_comparison_from_sbml(sbml_fp=TEST_SBML_FP, start=0, dur=1000, steps=5, simulators=['copasi', 'pysces', 'tellurium'])
-    # print(f'The worker result:\n{result}')
-    # return result
-    print(f'The worker got job id: {worker.job_id}')
+def test_dynamic_env():
+    with open(TEST_REQUEST_PATH, 'r') as json_file:
+        job = json.load(json_file)
+
+    job = {
+        "job_id": "TEST",
+        "simulators": ["copasi"]
+    }
+
+    create_dynamic_environment(job)
 
 
-# TEST_COMPARISON_RESULT = test_sbml_comparison()
-
-
+if __name__ == '__main__':
+    # test_dispatcher()
+    # test_dynamic_install()
+    test_dynamic_env()
 
 

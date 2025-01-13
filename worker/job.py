@@ -41,8 +41,7 @@ class JobDispatcher(object):
                  db_connector: MongoConnector,
                  timeout: int = 5):
         """
-        :param connection_uri: mongodb connection URI
-        :param database_id: mongodb database ID
+        :param db_connector: (`shared.database.MongoConnector`) database connector singleton instantiated with mongo uri.
         :param timeout: number of minutes for timeout. Default is 5 minutes
         """
         self.db_connector = db_connector
@@ -67,27 +66,29 @@ class JobDispatcher(object):
     def generate_failed_job(job_id: str, msg: str):
         return {"job_id": job_id, "status": "FAILED", "result": msg}
 
+    async def install_simulators(self, job: Mapping[str, Any]):
+        simulators = job["simulators"]
+        return install_request_dependencies(simulators)
+
     async def dispatch(self, job: Mapping[str, Any]):
         # TODO: add try blocks for each section
         job_status = job["status"]
         if job_status.lower() != "pending":
-            # 1. set job id
-            job_id = job["job_id"]
-            print(f'Dispatching job {job_id}...')
+            # job_id = job["job_id"]
+            # print(f'Dispatching job {job_id}...')
+            # simulators = job["simulators"]
+            # try:
+            #     installation_resp = install_request_dependencies(simulators)
+            # except subprocess.CalledProcessError as e:
+            #     msg = f"Attempted installation for Job {job_id} was not successful."
+            #     logger.error(msg)
+            #     return {"job_id": job_id, "status": "FAILED", "result": msg}
 
-            # 2. determine sims needed
-            simulators = job["simulators"]
-
-            # 3. try to run dynamic install
-            try:
-                installation_resp = install_request_dependencies(simulators)
-            except subprocess.CalledProcessError as e:
-                msg = f"Attempted installation for Job {job_id} was not successful."
-                logger.error(msg)
-                return {"job_id": job_id, "status": "FAILED", "result": msg}
+            # 3. install simulators required
+            await self.install_simulators(job)
 
             # 4. change job status to IN_PROGRESS
-            # await self.db_connector.update_job_status(job_id=job_id, status="IN_PROGRESS")
+            job_id = job["job_id"]
             await self.db_connector.update_job(job_id=job_id, status="IN_PROGRESS")
 
             # 5. from bsp import app_registrar.core
