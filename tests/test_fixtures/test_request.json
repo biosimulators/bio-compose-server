@@ -3,10 +3,10 @@
     "spec": {
         "particle": {
             "_type": "process",
-            "address": "local:smoldyn",
+            "address": "local:smoldyn-process",
             "config": {
                 "model": {
-                    "model_source": "file_uploads/compositiona25d5dea-c712-4923-8f20-c03edf41cdf5/MinE.txt"
+                    "model_source": "MinE.txt"
                 }
             },
             "inputs": {
@@ -28,10 +28,10 @@
         },
         "ode": {
             "_type": "process",
-            "address": "local:ode",
+            "address": "local:copasi-process",
             "config": {
                 "model": {
-                    "model_source": "file_uploads/compositiona25d5dea-c712-4923-8f20-c03edf41cdf5/BorisEJB.xml"
+                    "model_source": "file_uploads/composition-1d4dbe04-eafd-4a88-b192-710575e0da25/BorisEJB.xml"
                 }
             },
             "inputs": {
@@ -47,10 +47,10 @@
         },
         "fba": {
             "_type": "process",
-            "address": "local:fba",
+            "address": "local:cobra-process",
             "config": {
                 "model": {
-                    "model_source": "file_uploads/compositiona25d5dea-c712-4923-8f20-c03edf41cdf5/BorisEJB.xml"
+                    "model_source": "file_uploads/composition-1d4dbe04-eafd-4a88-b192-710575e0da25/BorisEJB.xml"
                 }
             },
             "inputs": {
@@ -87,11 +87,13 @@
             }
         }
     },
-    "job_id": "compositiona25d5dea-c712-4923-8f20-c03edf41cdf5",
-    "last_updated": "2025-01-13 14:46:14.575510",
+    "job_id": "composition-1d4dbe04-eafd-4a88-b192-710575e0da25",
+    "last_updated": "2025-01-13 15:10:57.400272",
     "simulators": [
-        "copasi"
+        "smoldyn",
+        "copasi",
+        "cobra"
     ],
-    "duration": 1,
+    "duration": 10,
     "results": {}
 }

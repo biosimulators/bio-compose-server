@@ -31,7 +31,7 @@ from shared.data_model import (
 from shared.database import MongoConnector
 from shared.io import write_uploaded_file
 from shared.log_config import setup_logging
-from shared.utils import get_project_version
+from shared.utils import get_project_version, new_job_id
 from shared.environment import (
     ENV_PATH,
     DEFAULT_DB_NAME,
@@ -198,7 +198,7 @@ async def validate_composition(
 )
 async def submit_composition(
         spec_file: UploadFile = File(..., description="Composition JSON File"),
-        simulators: List[str] = Query(..., description="Simulator package names to use for implementation"),
+        # simulators: List[str] = Query(..., description="Simulator package names to use for implementation"),
         duration: int = Query(..., description="Duration of simulation"),
         model_files: List[UploadFile] = File(...),
 ) -> CompositionRun:
@@ -206,17 +206,23 @@ async def submit_composition(
     if not spec_file.filename.endswith('.json') and spec_file.content_type != 'application/json':
         raise HTTPException(status_code=400, detail="Invalid file type. Only JSON files are supported.")
 
-    job_id = "composition" + str(uuid.uuid4())
-
-    # multifold IO verification:
+    job_id = new_job_id("composition")
     try:
         # 1. verification by fitting a common datamodel (in this case composition spec)
         contents = await spec_file.read()
         data: Dict = json.loads(contents)
 
-        # 1a. parse model files and upload to bucket if needed
-        for model_file in model_files:
-            for node_name, node_spec in data.items():
+        simulators: List[str] = []
+        for node_name, node_spec in data.items():
+            # parse list of simulators required from spec addresses
+
+            address = node_spec['address']  # MUST be like: local:copasi-process
+            if "emitter" not in address:
+                simulator = address.split(":")[-1].split('-')[0]
+                simulators.append(simulator)
+
+            # upload model files as needed (model filepath MUST match that which is in the spec-->./model-file
+            for model_file in model_files:
                 spec_model_source = node_spec.get("config").get("model", {}).get("model_source")
                 if (spec_model_source == model_file.filename):
                     file_ext = os.path.splitext(spec_model_source)[-1]
@@ -228,13 +234,13 @@ async def submit_composition(
                     )
                     data[node_name]["config"]["model"]["model_source"] = uploaded_model_source_location
 
-        # 1b. verification by fitting the individual process specs to an expected structure
-        nodes = []
+        # 1a. verification by fitting the individual process specs to an expected structure
+        nodes: List[CompositionNode] = []
         for node_name, node_spec in data.items():
             node = CompositionNode(name=node_name, **node_spec)
             nodes.append(node)
 
-        # 1c. verification by fitting that tree of nodes into an expected structure (which is consumed by pbg.Composite())
+        # 1b. verification by fitting that tree of nodes into an expected structure (which is consumed by pbg.Composite())
         composition = CompositionSpec(
             nodes=nodes,
             emitter_mode="all",
@@ -242,7 +248,7 @@ async def submit_composition(
         )
 
         # 2. verification by fitting write confirmation into CompositionRun...to verify O phase of IO, garbage in garbage out
-        write_confirmation = await db_conn_gateway.write(
+        write_confirmation: Dict = await db_conn_gateway.write(
             collection_name=DEFAULT_JOB_COLLECTION_NAME,
             status="PENDING",
             spec=composition.spec,
@@ -252,6 +258,9 @@ async def submit_composition(
             duration=duration,
             results={}
         )
+
+        with open(os.path.join(PROJECT_ROOT_PATH, "tests", "test_fixtures", "test_request.json"), "w") as f:
+            json.dump(write_confirmation, f, indent=4)
 
         return CompositionRun(
             job_id=job_id,

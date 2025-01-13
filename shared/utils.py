@@ -10,6 +10,10 @@ import h5py
 import numpy as np
 
 
+def new_job_id(tag: str) -> str:
+    return f"{tag}-{unique_id()}"
+
+
 def unique_id() -> str:
     return str(uuid.uuid4())
 
