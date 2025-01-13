@@ -39,7 +39,7 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
     # The ID of your GCS object
     # destination_blob_name = "storage-object-name"
 
-    storage_client = storage.Client('bio-check-428516')
+    storage_client = storage.Client('biosimulations')
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
 
@@ -49,9 +49,9 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
     # object that does not yet exist, set the if_generation_match precondition to 0.
     # If the destination object already exists in your bucket, set instead a
     # generation-match precondition using its generation number.
-    generation_match_precondition = 0
+    # generation_match_precondition = 0
 
-    blob.upload_from_filename(source_file_name, if_generation_match=generation_match_precondition)
+    blob.upload_from_filename(source_file_name)  # , if_generation_match=generation_match_precondition)
 
     return {
         'message': f"File {source_file_name} uploaded to {destination_blob_name}."

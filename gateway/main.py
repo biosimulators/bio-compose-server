@@ -29,6 +29,7 @@ from shared.data_model import (
     ValidatedComposition
 )
 from shared.database import MongoConnector
+from shared.io import write_uploaded_file
 from shared.log_config import setup_logging
 from shared.utils import get_project_version
 from shared.environment import (
@@ -40,6 +41,8 @@ from shared.environment import (
 )
 # from shared.io import write_uploaded_file, download_file_from_bucket
 
+
+# TODO: add model file parsing to JSON composite docs (bucket location)
 
 logger = setup_logging(__file__)
 
@@ -196,10 +199,13 @@ async def submit_composition(
         spec_file: UploadFile = File(..., description="Composition JSON File"),
         simulators: List[str] = Query(..., description="Simulator package names to use for implementation"),
         duration: int = Query(..., description="Duration of simulation"),
+        model_files: List[UploadFile] = File(...),
 ) -> CompositionRun:
     # validate filetype
     if not spec_file.filename.endswith('.json') and spec_file.content_type != 'application/json':
         raise HTTPException(status_code=400, detail="Invalid file type. Only JSON files are supported.")
+
+    job_id = "composition" + str(uuid.uuid4())
 
     # multifold IO verification:
     try:
@@ -207,17 +213,26 @@ async def submit_composition(
         contents = await spec_file.read()
         data: Dict = json.loads(contents)
 
-        # 1a. verification by fitting the individual process specs to an expected structure
+        # 1a. parse model files and upload to bucket if needed
+        for model_file in model_files:
+            for node_name, node_spec in data.items():
+                spec_model_source = node_spec.get("config").get("model", {}).get("model_source")
+                if (spec_model_source == model_file.filename):
+                    file_ext = os.path.splitext(spec_model_source)[-1]
+                    uploaded_model_source_location = await write_uploaded_file(job_id=job_id, uploaded_file=model_file, bucket_name=DEFAULT_BUCKET_NAME, extension=file_ext)
+                    data[node_name]["config"]["model"]["model_source"] = uploaded_model_source_location
+
+        # 1b. verification by fitting the individual process specs to an expected structure
         nodes = []
         for node_name, node_spec in data.items():
             node = CompositionNode(name=node_name, **node_spec)
             nodes.append(node)
 
-        # 1b. verification by fitting that tree of nodes into an expected structure (which is consumed by pbg.Composite())
+        # 1c. verification by fitting that tree of nodes into an expected structure (which is consumed by pbg.Composite())
         composition = CompositionSpec(
             nodes=nodes,
             emitter_mode="all",
-            job_id="composition" + str(uuid.uuid4())
+            job_id=job_id
         )
 
         # 2. verification by fitting write confirmation into CompositionRun...to verify O phase of IO, garbage in garbage out

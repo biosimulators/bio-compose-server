@@ -1,0 +1,87 @@
+{
+    "particle": {
+        "_type": "process",
+        "address": "local:smoldyn",
+        "config": {
+            "model": {
+                "model_source": "MinE.txt"
+            }
+        },
+        "inputs": {
+            "species_counts": [
+                "species_counts_store"
+            ],
+            "molecules": [
+                "molecules_store"
+            ]
+        },
+        "outputs": {
+            "species_counts": [
+                "species_counts_store"
+            ],
+            "molecules": [
+                "molecules_store"
+            ]
+        }
+    },
+    "ode": {
+        "_type": "process",
+        "address": "local:ode",
+        "config": {
+            "model": {
+                "model_source": "BorisEJB.xml"
+            }
+        },
+        "inputs": {
+            "species_counts": [
+                "species_counts_store"
+            ]
+        },
+        "outputs": {
+            "species_concentrations": [
+                "species_concentrations_store"
+            ]
+        }
+    },
+    "fba": {
+        "_type": "process",
+        "address": "local:fba",
+        "config": {
+            "model": {
+                "model_source": "BorisEJB.xml"
+            }
+        },
+        "inputs": {
+            "species_concentrations": [
+                "species_concentrations_store"
+            ]
+        },
+        "outputs": {
+            "fluxes": [
+                "fluxes_store"
+            ]
+        }
+    },
+    "emitter": {
+        "_type": "step",
+        "address": "local:ram-emitter",
+        "config": {
+            "emit": {
+                "species_concentrations": "tree[float]",
+                "fluxes": "tree[float]",
+                "molecules": "tree[float]"
+            }
+        },
+        "inputs": {
+            "species_concentrations": [
+                "species_concentrations_store"
+            ],
+            "fluxes": [
+                "fluxes_store"
+            ],
+            "molecules": [
+                "molecules_store"
+            ]
+        }
+    }
+}
