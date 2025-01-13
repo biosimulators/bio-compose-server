@@ -259,15 +259,7 @@ async def submit_composition(
             results={}
         )
 
-        with open(os.path.join(PROJECT_ROOT_PATH, "tests", "test_fixtures", "test_request.json"), "w") as f:
-            json.dump(write_confirmation, f, indent=4)
-
-        return CompositionRun(
-            job_id=job_id,
-            last_updated=write_confirmation["last_updated"],
-            status=write_confirmation["status"],
-            results=write_confirmation["results"]
-        )
+        return CompositionRun(**write_confirmation)
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON format.")
     except Exception as e:
