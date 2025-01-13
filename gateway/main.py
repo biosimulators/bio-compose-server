@@ -219,7 +219,12 @@ async def submit_composition(
                 spec_model_source = node_spec.get("config").get("model", {}).get("model_source")
                 if (spec_model_source == model_file.filename):
                     file_ext = os.path.splitext(spec_model_source)[-1]
-                    uploaded_model_source_location = await write_uploaded_file(job_id=job_id, uploaded_file=model_file, bucket_name=DEFAULT_BUCKET_NAME, extension=file_ext)
+                    uploaded_model_source_location = await write_uploaded_file(
+                        job_id=job_id,
+                        uploaded_file=model_file,
+                        bucket_name=DEFAULT_BUCKET_NAME,
+                        extension=file_ext
+                    )
                     data[node_name]["config"]["model"]["model_source"] = uploaded_model_source_location
 
         # 1b. verification by fitting the individual process specs to an expected structure
