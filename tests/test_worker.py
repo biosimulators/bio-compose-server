@@ -33,7 +33,6 @@ async def test_dispatcher():
 
     # get job change confirmation:
     result = await dispatcher.db_connector.read(collection_name="compose_jobs", job_id=test_request['job_id'])
-    print(f'result: {result}')
 
 
 if __name__ == '__main__':

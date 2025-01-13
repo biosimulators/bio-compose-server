@@ -31,7 +31,7 @@ from process_bigraph import Composite
 from shared.database import MongoConnector
 from shared.dynamic_env import install_request_dependencies, create_dynamic_environment
 from shared.log_config import setup_logging
-from shared.environment import DEFAULT_LOCAL_MONGO_URI, DEFAULT_DB_NAME, DEFAULT_DB_TYPE, DEFAULT_JOB_COLLECTION_NAME
+from shared.environment import DEFAULT_LOCAL_MONGO_URI, DEFAULT_DB_NAME, DEFAULT_DB_TYPE, DEFAULT_JOB_COLLECTION_NAME, PROJECT_ROOT_PATH
 
 logger = setup_logging(__file__)
 
@@ -83,6 +83,8 @@ class JobDispatcher(object):
             # 4. change job status to IN_PROGRESS
             job_id = job["job_id"]
             await self.db_connector.update_job(job_id=job_id, status="IN_PROGRESS")
+            job_str = json.dumps(job)
+            subprocess.check_call(["conda", "run", "-n", job_id, "python", f"{PROJECT_ROOT_PATH}/worker/execute.py", job_str, job_id])
             # # 5. from bsp import app_registrar.core
             # bsp = __import__("bsp")
             # core = bsp.app_registrar.core
