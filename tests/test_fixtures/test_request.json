@@ -6,7 +6,7 @@
             "address": "local:smoldyn-process",
             "config": {
                 "model": {
-                    "model_source": "MinE.txt"
+                    "model_source": "file_uploads/composition-5ec399ca-23b9-405c-bcb8-c002d4a94b1a/MinE.txt"
                 }
             },
             "inputs": {
@@ -31,17 +31,26 @@
             "address": "local:copasi-process",
             "config": {
                 "model": {
-                    "model_source": "file_uploads/composition-c23931b3-f7d2-4a53-b9fb-ff83221dbbde/BorisEJB.xml"
+                    "model_source": "file_uploads/composition-5ec399ca-23b9-405c-bcb8-c002d4a94b1a/BorisEJB.xml"
                 }
             },
             "inputs": {
                 "species_counts": [
                     "species_counts_store"
+                ],
+                "time": [
+                    "time_store"
                 ]
             },
             "outputs": {
                 "species_concentrations": [
                     "species_concentrations_store"
+                ],
+                "reaction_fluxes": [
+                    "reaction_fluxes_store"
+                ],
+                "time": [
+                    "time_store"
                 ]
             }
         },
@@ -50,12 +59,12 @@
             "address": "local:cobra-process",
             "config": {
                 "model": {
-                    "model_source": "file_uploads/composition-c23931b3-f7d2-4a53-b9fb-ff83221dbbde/BorisEJB.xml"
+                    "model_source": "file_uploads/composition-5ec399ca-23b9-405c-bcb8-c002d4a94b1a/BorisEJB.xml"
                 }
             },
             "inputs": {
-                "species_concentrations": [
-                    "species_concentrations_store"
+                "reaction_fluxes": [
+                    "reaction_fluxes_store"
                 ]
             },
             "outputs": {
@@ -69,9 +78,9 @@
             "address": "local:ram-emitter",
             "config": {
                 "emit": {
+                    "molecules": "tree[float]",
                     "species_concentrations": "tree[float]",
-                    "fluxes": "tree[float]",
-                    "molecules": "tree[float]"
+                    "fluxes": "tree[float]"
                 }
             },
             "inputs": {
@@ -87,8 +96,8 @@
             }
         }
     },
-    "job_id": "composition-c23931b3-f7d2-4a53-b9fb-ff83221dbbde",
-    "last_updated": "2025-01-13 15:15:03.097596",
+    "job_id": "composition-5ec399ca-23b9-405c-bcb8-c002d4a94b1a",
+    "last_updated": "2025-01-13 15:36:16.744520",
     "simulators": [
         "smoldyn",
         "copasi",
