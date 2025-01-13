@@ -38,13 +38,13 @@ logger = setup_logging(__file__)
 
 class JobDispatcher(object):
     def __init__(self,
-                 # db_connector: MongoConnector,
+                 db_connector: MongoConnector,
                  timeout: int = 5):
         """
         :param db_connector: (`shared.database.MongoConnector`) database connector singleton instantiated with mongo uri.
         :param timeout: number of minutes for timeout. Default is 5 minutes
         """
-        # self.db_connector = db_connector
+        self.db_connector = db_connector
         self.timeout = timeout * 60
 
     @property
@@ -71,28 +71,18 @@ class JobDispatcher(object):
         job_id = job["job_id"]
         return install_request_dependencies(job_id=job_id, simulators=simulators)
 
-    def dispatch(self, job: Mapping[str, Any]):
+    async def dispatch(self, job: Mapping[str, Any]):
         # TODO: add try blocks for each section
         job_status = job["status"]
         if job_status.lower() == "pending":
-            # job_id = job["job_id"]
-            # print(f'Dispatching job {job_id}...')
-            # simulators = job["simulators"]
-            # try:
-            #     installation_resp = install_request_dependencies(simulators)
-            # except subprocess.CalledProcessError as e:
-            #     msg = f"Attempted installation for Job {job_id} was not successful."
-            #     logger.error(msg)
-            #     return {"job_id": job_id, "status": "FAILED", "result": msg}
-
             # 3. install simulators required
             # await self.install_simulators(job)
             print("Creating env")
             create_dynamic_environment(job)
 
             # 4. change job status to IN_PROGRESS
-            # job_id = job["job_id"]
-            # await self.db_connector.update_job(job_id=job_id, status="IN_PROGRESS")
+            job_id = job["job_id"]
+            await self.db_connector.update_job(job_id=job_id, status="IN_PROGRESS")
             # # 5. from bsp import app_registrar.core
             # bsp = __import__("bsp")
             # core = bsp.app_registrar.core

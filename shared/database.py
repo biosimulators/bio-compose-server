@@ -14,8 +14,9 @@ from shared.environment import DEFAULT_JOB_COLLECTION_NAME, DEFAULT_LOCAL_MONGO_
 
 class DatabaseConnector(ABC):
     """Abstract class that is both serializable and interacts with the database (of any type). """
-    def __init__(self, connection_uri: str, database_id: str, connector_id: str):
+    def __init__(self, connection_uri: str, database_id: str, connector_id: str, local: bool = False):
         self.database_id = database_id
+        self.local = local
         self.client = self._get_client(connection_uri)
         self.db = self._get_database(self.database_id)
         self.connector_id = connector_id
@@ -66,8 +67,9 @@ class MongoConnector(DatabaseConnector):
     def __init__(self,
                  connection_uri: str,
                  database_id: str,
-                 connector_id: str = None):
-        super().__init__(connection_uri, database_id, connector_id)
+                 connector_id: str = None,
+                 local: bool = False):
+        super().__init__(connection_uri, database_id, connector_id, local)
 
     def confirm_connection(self):
         print(f"Connection established with database: {self._get_database(self.database_id)}")
@@ -84,7 +86,7 @@ class MongoConnector(DatabaseConnector):
         return {coll_name: [v for v in self.db[coll_name].find()] for coll_name in self.db.list_collection_names()}
 
     def _get_client(self, *args):
-        return MongoClient(args[0])
+        return MongoClient(args[0]) if not self.local else MongoClient("localhost", 27017)
 
     def _get_database(self, db_id: str) -> Database:
         return self.client.get_database(db_id)
