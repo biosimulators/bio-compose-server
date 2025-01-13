@@ -247,7 +247,12 @@ async def submit_composition(
             results={}
         )
 
-        return CompositionRun(**write_confirmation)
+        return CompositionRun(
+            job_id=job_id,
+            last_updated=write_confirmation["last_updated"],
+            status=write_confirmation["status"],
+            results=write_confirmation["results"]
+        )
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON format.")
     except Exception as e:

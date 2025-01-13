@@ -208,9 +208,9 @@ class CompositionSpec(BaseClass):
 class CompositionRun(BaseClass):
     job_id: str
     last_updated: str
-    simulators: List[str]
-    duration: int
-    spec: Dict[str, Any]
+    # simulators: List[str]
+    # duration: int
+    # spec: Dict[str, Any]
     status: str = "PENDING"
     results: Dict[str, Any] = None
 
