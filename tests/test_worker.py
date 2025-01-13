@@ -21,7 +21,7 @@ TEST_REQUEST_PATH = os.path.join(PROJECT_ROOT_PATH, 'tests', 'test_fixtures', 't
 
 logger = setup_logging(__file__)
 db_connector = MongoConnector(connection_uri=MONGO_URI, database_id=DEFAULT_DB_NAME)
-dispatcher = JobDispatcher(db_connector=db_connector)
+dispatcher = JobDispatcher()# (db_connector=db_connector)
 
 
 def test_dispatcher():
@@ -29,6 +29,7 @@ def test_dispatcher():
         test_request = json.load(json_file)
 
     print(test_request)
+    dispatcher.dispatch(test_request)
 
 
 def test_dynamic_install():
@@ -43,17 +44,12 @@ def test_dynamic_env():
     with open(TEST_REQUEST_PATH, 'r') as json_file:
         job = json.load(json_file)
 
-    job = {
-        "job_id": "TEST",
-        "simulators": ["copasi"]
-    }
-
     create_dynamic_environment(job)
 
 
 if __name__ == '__main__':
-    # test_dispatcher()
+    test_dispatcher()
     # test_dynamic_install()
-    test_dynamic_env()
+    # test_dynamic_env()
 
 

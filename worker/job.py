@@ -29,7 +29,7 @@ from typing import Any, Mapping, List
 from process_bigraph import Composite
 
 from shared.database import MongoConnector
-from shared.dynamic_env import install_request_dependencies
+from shared.dynamic_env import install_request_dependencies, create_dynamic_environment
 from shared.log_config import setup_logging
 from shared.environment import DEFAULT_LOCAL_MONGO_URI, DEFAULT_DB_NAME, DEFAULT_DB_TYPE, DEFAULT_JOB_COLLECTION_NAME
 
@@ -38,13 +38,13 @@ logger = setup_logging(__file__)
 
 class JobDispatcher(object):
     def __init__(self,
-                 db_connector: MongoConnector,
+                 # db_connector: MongoConnector,
                  timeout: int = 5):
         """
         :param db_connector: (`shared.database.MongoConnector`) database connector singleton instantiated with mongo uri.
         :param timeout: number of minutes for timeout. Default is 5 minutes
         """
-        self.db_connector = db_connector
+        # self.db_connector = db_connector
         self.timeout = timeout * 60
 
     @property
@@ -68,12 +68,13 @@ class JobDispatcher(object):
 
     async def install_simulators(self, job: Mapping[str, Any]):
         simulators = job["simulators"]
-        return install_request_dependencies(simulators)
+        job_id = job["job_id"]
+        return install_request_dependencies(job_id=job_id, simulators=simulators)
 
-    async def dispatch(self, job: Mapping[str, Any]):
+    def dispatch(self, job: Mapping[str, Any]):
         # TODO: add try blocks for each section
         job_status = job["status"]
-        if job_status.lower() != "pending":
+        if job_status.lower() == "pending":
             # job_id = job["job_id"]
             # print(f'Dispatching job {job_id}...')
             # simulators = job["simulators"]
@@ -85,48 +86,43 @@ class JobDispatcher(object):
             #     return {"job_id": job_id, "status": "FAILED", "result": msg}
 
             # 3. install simulators required
-            await self.install_simulators(job)
+            # await self.install_simulators(job)
+            print("Creating env")
+            create_dynamic_environment(job)
 
             # 4. change job status to IN_PROGRESS
-            job_id = job["job_id"]
-            await self.db_connector.update_job(job_id=job_id, status="IN_PROGRESS")
-
-            # 5. from bsp import app_registrar.core
-            bsp = __import__("bsp")
-            core = bsp.app_registrar.core
-
-            # 6. create Composite() with core and job["job_spec"]
-            composition = Composite(
-                config={"state": job["spec"]},
-                core=core
-            )
-
-            # 7. run composition with instance from #6 for specified duration (default 1)
-            dur = job.get("duration", 1)
-            composition.run(dur)
-
-            # 8. get composition results indexed from ram-emitter
-            results = composition.gather_results()[("emitter",)]
-
-            # 9. update job in DB ['results'] to Composite().gather_results() AND change status to COMPLETE
-            await self.db_connector.update_job(job_id=job_id, status="COMPLETE", results=results)
-
-            # 10. add new result state in db within result_states collection!
-            temp_dir = tempfile.mkdtemp()
-            temp_fname = f"{job}.state.json"
-            composition.save(filename=temp_fname, outdir=temp_dir)
-            temp_path = os.path.join(temp_dir, temp_fname)
-            with open(temp_path, 'r') as f:
-                current_data = json.load(f)
-            await self.db_connector.write(
-                collection_name="result_states",
-                job_id=job_id,
-                data=current_data,
-                last_updated=self.db_connector.timestamp()
-            )
-
-            # 11. remove composite state file artifact
-            os.remove(temp_path) if os.path.exists(temp_path) else None
+            # job_id = job["job_id"]
+            # await self.db_connector.update_job(job_id=job_id, status="IN_PROGRESS")
+            # # 5. from bsp import app_registrar.core
+            # bsp = __import__("bsp")
+            # core = bsp.app_registrar.core
+            # # 6. create Composite() with core and job["job_spec"]
+            # composition = Composite(
+            #     config={"state": job["spec"]},
+            #     core=core
+            # )
+            # # 7. run composition with instance from #6 for specified duration (default 1)
+            # dur = job.get("duration", 1)
+            # composition.run(dur)
+            # # 8. get composition results indexed from ram-emitter
+            # results = composition.gather_results()[("emitter",)]
+            # # 9. update job in DB ['results'] to Composite().gather_results() AND change status to COMPLETE
+            # await self.db_connector.update_job(job_id=job_id, status="COMPLETE", results=results)
+            # # 10. add new result state in db within result_states collection!
+            # temp_dir = tempfile.mkdtemp()
+            # temp_fname = f"{job}.state.json"
+            # composition.save(filename=temp_fname, outdir=temp_dir)
+            # temp_path = os.path.join(temp_dir, temp_fname)
+            # with open(temp_path, 'r') as f:
+            #     current_data = json.load(f)
+            # await self.db_connector.write(
+            #     collection_name="result_states",
+            #     job_id=job_id,
+            #     data=current_data,
+            #     last_updated=self.db_connector.timestamp()
+            # )
+            # # 11. remove composite state file artifact
+            # os.remove(temp_path) if os.path.exists(temp_path) else None
 
 
 def test_dispatcher():
