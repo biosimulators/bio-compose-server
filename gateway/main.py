@@ -37,7 +37,8 @@ from shared.environment import (
     DEFAULT_DB_NAME,
     DEFAULT_DB_TYPE,
     DEFAULT_JOB_COLLECTION_NAME,
-    DEFAULT_BUCKET_NAME
+    DEFAULT_BUCKET_NAME,
+    PROJECT_ROOT_PATH
 )
 # from shared.io import write_uploaded_file, download_file_from_bucket
 
