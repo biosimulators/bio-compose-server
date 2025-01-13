@@ -20,6 +20,7 @@ class DatabaseConnector(ABC):
         self.client = self._get_client(connection_uri)
         self.db = self._get_database(self.database_id)
         self.connector_id = connector_id
+        self.connection_uri = connection_uri
 
     @property
     @abstractmethod

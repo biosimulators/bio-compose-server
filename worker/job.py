@@ -83,8 +83,14 @@ class JobDispatcher(object):
             # 4. change job status to IN_PROGRESS
             job_id = job["job_id"]
             await self.db_connector.update_job(job_id=job_id, status="IN_PROGRESS")
+
             job_str = json.dumps(job)
-            subprocess.check_call(["conda", "run", "-n", job_id, "python", f"{PROJECT_ROOT_PATH}/worker/execute.py", job_str, job_id])
+            conn_uri = self.db_connector.connection_uri
+            local_conn = int(self.db_connector.local)
+
+            subprocess.check_call(
+                ["conda", "run", "-n", job_id, "python", f"{PROJECT_ROOT_PATH}/worker/execute.py", job_str, job_id, conn_uri, local_conn]
+            )
             # # 5. from bsp import app_registrar.core
             # bsp = __import__("bsp")
             # core = bsp.app_registrar.core

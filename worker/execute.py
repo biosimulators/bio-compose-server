@@ -12,10 +12,12 @@ from shared.environment import DEFAULT_DB_NAME
 job = sys.argv[1]
 job_id = sys.argv[2]
 job = json.loads(job)
+mongo_uri = sys.argv[3]
+local_connection = sys.argv[4]
 
 
 async def run():
-    db_connector = MongoConnector(connection_uri='mongodb://localhost:27017/', database_id=DEFAULT_DB_NAME, local=True)
+    db_connector = MongoConnector(connection_uri=mongo_uri, database_id=DEFAULT_DB_NAME, local=bool(int(local_connection)))
     # from bsp import app_registrar.core
     bsp = __import__("bsp")
     core = bsp.app_registrar.core
