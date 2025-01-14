@@ -47,7 +47,7 @@ jobs:
       - name: Build gateway service
         run: |
           GATEWAY_VERSION=$(python -B .github/parse_container_version.py gateway)
-          GATEWAY_IMG="${{ vars.IMG_ROOT }}-gateway:$GATEWAY_VERSION-dev"
+          GATEWAY_IMG="${{ vars.IMG_ROOT }}-gateway:$GATEWAY_VERSION"
           docker build --no-cache -f ./gateway/Dockerfile-gateway -t $GATEWAY_IMG .
           docker push $GATEWAY_IMG
 
@@ -63,6 +63,6 @@ jobs:
       - name: Build worker service
         run: |
           WORKER_VERSION=$(python -B .github/parse_container_version.py worker)
-          WORKER_IMG="${{ vars.IMG_ROOT }}-worker:$WORKER_VERSION-dev"
+          WORKER_IMG="${{ vars.IMG_ROOT }}-worker:$WORKER_VERSION"
           docker build --no-cache -f ./worker/Dockerfile-worker -t $WORKER_IMG .
           docker push $WORKER_IMG
