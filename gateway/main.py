@@ -26,7 +26,7 @@ from shared.data_model import (
     CompositionSpec,
     CompositionRun,
     OutputData,
-    ValidatedComposition
+    ValidatedComposition, SmoldynRun
 )
 from shared.database import MongoConnector
 from shared.io import write_uploaded_file
@@ -135,6 +135,53 @@ def stop_mongo_client() -> DbClientResponse:
 @app.get("/")
 def root():
     return {'root': 'https://compose.biosimulations.org'}
+
+
+# -- submit single simulator jobs --
+@app.post(
+    "/run-smoldyn",
+    response_model=SmoldynRun,
+    name="Run a smoldyn simulation",
+    operation_id="run-smoldyn",
+    tags=["Simulation Execution"],
+    summary="Run a smoldyn simulation.")
+async def run_smoldyn(
+        uploaded_file: UploadFile = File(..., description="Smoldyn Configuration File"),
+        duration: int = Query(default=None, description="Simulation Duration"),
+        dt: float = Query(default=None, description="Interval of step with which simulation runs"),
+        # initial_molecule_state: List = Body(default=None, description="Mapping of species names to initial molecule conditions including counts and location.")
+) -> SmoldynRun:
+    try:
+        # get job params
+        job_id = "simulation-execution-smoldyn" + str(uuid.uuid4())
+        _time = db_conn_gateway.timestamp()
+        uploaded_file_location = await write_uploaded_file(job_id=job_id, uploaded_file=uploaded_file, bucket_name=DEFAULT_BUCKET_NAME, extension='.txt')
+        # instantiate new return
+        smoldyn_run = SmoldynRun(
+            job_id=job_id,
+            timestamp=_time,
+            status="PENDING",
+            path=uploaded_file_location,
+            duration=duration,
+            dt=dt,
+            simulators=["smoldyn"]
+        )
+        # insert job
+        pending_job = await db_conn_gateway.write(
+            collection_name="smoldyn_jobs",
+            job_id=smoldyn_run.job_id,
+            timestamp=smoldyn_run.timestamp,
+            status=smoldyn_run.status,
+            path=smoldyn_run.path,
+            duration=smoldyn_run.duration,
+            dt=smoldyn_run.dt,
+            simulators=smoldyn_run.simulators
+        )
+ 
+        return smoldyn_run
+    except Exception as e:
+        logger.error(str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # -- submit composition jobs --
@@ -318,55 +365,7 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=3001)
 
 
-# TODO: refactor this for collections
-# -- run simulations --- TODO: MOVE THIS TO A SEP MODULE
-# @app.post(
-#     "/run-smoldyn",
-#     response_model=SmoldynRun,
-#     name="Run a smoldyn simulation",
-#     operation_id="run-smoldyn",
-#     tags=["Simulation Execution"],
-#     summary="Run a smoldyn simulation.")
-# async def run_smoldyn(
-#         uploaded_file: UploadFile = File(..., description="Smoldyn Configuration File"),
-#         duration: int = Query(default=None, description="Simulation Duration"),
-#         dt: float = Query(default=None, description="Interval of step with which simulation runs"),
-#         # initial_molecule_state: List = Body(default=None, description="Mapping of species names to initial molecule conditions including counts and location.")
-# ) -> SmoldynRun:
-#     try:
-#         # get job params
-#         job_id = "simulation-execution-smoldyn" + str(uuid.uuid4())
-#         _time = db_conn_gateway.timestamp()
-#         uploaded_file_location = await write_uploaded_file(job_id=job_id, uploaded_file=uploaded_file, bucket_name=DEFAULT_BUCKET_NAME, extension='.txt')
-#
-#         # instantiate new return
-#         smoldyn_run = SmoldynRun(
-#             job_id=job_id,
-#             timestamp=_time,
-#             status=JobStatus.PENDING.value,
-#             path=uploaded_file_location,
-#             duration=duration,
-#             dt=dt,
-#             simulators=["smoldyn"]
-#         )
-#
-#         # insert job
-#         pending_job = await db_conn_gateway.write(
-#             collection_name=DEFAULT_JOB_COLLECTION_NAME,
-#             job_id=smoldyn_run.job_id,
-#             timestamp=smoldyn_run.timestamp,
-#             status=smoldyn_run.status,
-#             path=smoldyn_run.path,
-#             duration=smoldyn_run.duration,
-#             dt=smoldyn_run.dt,
-#             simulators=smoldyn_run.simulators
-#         )
-#
-#         # return typed obj
-#         return smoldyn_run
-#     except Exception as e:
-#         logger.error(str(e))
-#         raise HTTPException(status_code=500, detail=str(e))
+
 #
 #
 # @app.post(

@@ -227,3 +227,14 @@ class OutputData(BaseClass):
 class ValidatedComposition(BaseClass):
     state: Dict[str, Any]
     valid: bool
+
+
+@dataclass
+class SmoldynRun(BaseClass):
+    job_id: str
+    timestamp: str
+    status: str
+    path: str
+    duration: float
+    dt: float
+    simulators: List[str] = ["smoldyn"]
