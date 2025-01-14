@@ -2,26 +2,32 @@ import os
 import tempfile
 from typing import Dict
 
+from bsp.data_generators import generate_sbml_outputs
+
 from shared.environment import DEFAULT_BUCKET_NAME
 from shared.io import download_file, format_smoldyn_configuration, write_uploaded_file
-from worker.data_generator import run_smoldyn, run_readdy
+from worker.data_generator import run_smoldyn, run_readdy, generate_sbml_utc_outputs
 
 
-class SimulationRunner(object):
+# TODO: standardize this class as a base class
+
+class RunsDispatcher(object):
     async def run(self, job: Dict):
+        result = {}
         source_fp = job.get('path')
         # case: is either utc or smoldyn
         if source_fp is not None:
             out_dir = tempfile.mkdtemp()
             local_fp = download_file(source_blob_path=source_fp, out_dir=out_dir, bucket_name=DEFAULT_BUCKET_NAME)
             if local_fp.endswith('.txt'):
-                await self.run_smoldyn(local_fp=local_fp, job=job)
+                result = await self.run_smoldyn(local_fp=local_fp, job=job)
             elif local_fp.endswith('.xml'):
-                await self.run_utc(local_fp)
+                result = await self.run_utc(local_fp=local_fp, job=job)
         # case: is readdy (no input file)
         elif "readdy" in job.get('job_id'):
-            await self.run_readdy()
-        return self.job_result
+            result = await self.run_readdy(job)
+
+        return result
 
     async def run_smoldyn(self, local_fp: str, job: Dict):
         # format model file for disabling graphics
@@ -85,11 +91,11 @@ class SimulationRunner(object):
         else:
             return result
 
-    async def run_utc(self, local_fp: str):
-        start = self.job_params['start']
-        end = self.job_params['end']
-        steps = self.job_params['steps']
-        simulator = self.job_params.get('simulators')[0]
+    async def run_utc(self, local_fp: str, job: Dict):
+        start = job['start']
+        end = job['end']
+        steps = job['steps']
+        simulator = job.get('simulators')[0]
 
-        result = generate_sbml_outputs(sbml_fp=local_fp, start=start, dur=end, steps=steps, simulators=[simulator])
-        self.job_result = result[simulator]
+        result = generate_sbml_utc_outputs(sbml_fp=local_fp, start=start, dur=end, steps=steps, simulators=[simulator])
+        return result[simulator]

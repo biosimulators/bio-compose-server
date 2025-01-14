@@ -36,7 +36,7 @@ from shared.environment import DEFAULT_LOCAL_MONGO_URI, DEFAULT_DB_NAME, DEFAULT
 logger = setup_logging(__file__)
 
 
-class JobDispatcher(object):
+class CompositionDispatcher(object):
     def __init__(self,
                  db_connector: MongoConnector,
                  timeout: int = 5):
@@ -127,7 +127,7 @@ def test_dispatcher():
     from shared.data_model import CompositionRun
     import asyncio
 
-    dispatcher = JobDispatcher(connection_uri=DEFAULT_LOCAL_MONGO_URI, database_id=DEFAULT_DB_NAME)
+    dispatcher = CompositionDispatcher(connection_uri=DEFAULT_LOCAL_MONGO_URI, database_id=DEFAULT_DB_NAME)
     jid = "test"
 
     test_run = CompositionRun(
