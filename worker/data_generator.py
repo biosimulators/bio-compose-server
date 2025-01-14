@@ -310,3 +310,60 @@ def run_sbml_amici(sbml_fp: str, start: int, dur: int, steps: int) -> Dict[str, 
         error_message = handle_sbml_exception()
         logger.error(error_message)
         return {"error": error_message}
+
+
+# -- utc (sbml)-specific runs --
+
+COMPATIBLE_UTC_SIMULATORS = ["amici", "copasi", "pysces", "tellurium"]
+
+SBML_EXECUTORS = dict(zip(
+    [data[0] for data in COMPATIBLE_UTC_SIMULATORS],
+    [run_sbml_amici, run_sbml_copasi, run_sbml_pysces, run_sbml_tellurium]
+))
+
+
+def generate_sbml_utc_outputs(sbml_fp: str, start: int, dur: int, steps: int, simulators: list[str] = None) -> dict:
+    # TODO: add VCELL and pysces here
+    output = {}
+    sbml_species_ids = list(get_sbml_species_mapping(sbml_fp).keys())
+    simulators = simulators or ['amici', 'copasi', 'tellurium', 'pysces']
+    all_output_ids = []
+    for simulator in simulators:
+        results = {}
+        simulator = simulator.lower()
+        simulation_executor = SBML_EXECUTORS[simulator]
+        sim_result = simulation_executor(sbml_fp=sbml_fp, start=start, dur=dur, steps=steps)
+
+        # case: simulation execution was successful
+        if "error" not in sim_result.keys():
+            # add to all shared names
+            all_output_ids.append(list(sim_result.keys()))
+
+            # iterate over sbml_species_ids to index output data
+            for species_id in sbml_species_ids:
+                if species_id in sim_result.keys():
+                    output_vals = sim_result[species_id]
+                    if isinstance(output_vals, np.ndarray):
+                        output_vals = output_vals.tolist()
+                    results[species_id] = output_vals
+        else:
+            # case: simulation had an error
+            results = sim_result
+
+        # set the simulator output
+        output[simulator] = results
+
+    # get the commonly shared output ids
+    final_output = {}
+    shared_output_ids = min(all_output_ids)
+    for simulator_name in output.keys():
+        sim_data = {}
+        for spec_id in output[simulator_name].keys():
+            if spec_id in shared_output_ids:
+                sim_data[spec_id] = output[simulator_name][spec_id]
+            elif spec_id == "error":
+                sim_data["error"] = output[simulator_name][spec_id]
+
+        final_output[simulator_name] = sim_data
+
+    return final_output
