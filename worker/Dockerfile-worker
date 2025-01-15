@@ -94,5 +94,7 @@ LABEL org.opencontainers.image.title="bio-compose-server-worker" \
 #
 # ENTRYPOINT ["/entrypoint.sh"]
 
+RUN conda install -n server conda-forge::pymem3dg
+
 CMD ["python3", "worker/main.py"]
 
