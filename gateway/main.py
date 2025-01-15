@@ -26,7 +26,7 @@ from shared.data_model import (
     CompositionSpec,
     CompositionRun,
     OutputData,
-    ValidatedComposition, SmoldynRun
+    ValidatedComposition, SmoldynRun, AgentParameters, ReaddySpeciesConfig, ReaddyReactionConfig, ReaddyParticleConfig, ReaddyRun
 )
 from shared.database import MongoConnector
 from shared.io import write_uploaded_file
@@ -138,14 +138,15 @@ def root():
 
 
 # -- submit single simulator jobs --
+
 @app.post(
-    "/run-smoldyn",
+    "/run-smoldyn-process",
     response_model=SmoldynRun,
     name="Run a smoldyn simulation",
-    operation_id="run-smoldyn",
-    tags=["Simulation Execution"],
+    operation_id="run-smoldyn-process",
+    tags=["Processes"],
     summary="Run a smoldyn simulation.")
-async def run_smoldyn(
+async def run_smoldyn_process(
         uploaded_file: UploadFile = File(..., description="Smoldyn Configuration File"),
         duration: int = Query(default=None, description="Simulation Duration"),
         dt: float = Query(default=None, description="Interval of step with which simulation runs"),
@@ -163,8 +164,7 @@ async def run_smoldyn(
             status="PENDING",
             path=uploaded_file_location,
             duration=duration,
-            dt=dt,
-            simulators=["smoldyn"]
+            dt=dt
         )
         # insert job
         pending_job = await db_conn_gateway.write(
@@ -174,11 +174,112 @@ async def run_smoldyn(
             status=smoldyn_run.status,
             path=smoldyn_run.path,
             duration=smoldyn_run.duration,
-            dt=smoldyn_run.dt,
-            simulators=smoldyn_run.simulators
+            dt=smoldyn_run.dt
         )
- 
+
         return smoldyn_run
+    except Exception as e:
+        logger.error(str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post(
+    "/run-readdy-process",
+    response_model=ReaddyRun,
+    name="Run a readdy simulation",
+    operation_id="run-readdy-process",
+    tags=["Processes"],
+    summary="Run a readdy simulation.")
+async def run_readdy_process(
+        box_size: List[float] = Query(default=[0.3, 0.3, 0.3], description="Box Size of box"),
+        duration: int = Query(default=10, description="Simulation Duration"),
+        dt: float = Query(default=0.0008, description="Interval of step with which simulation runs"),
+        species_config: List[ReaddySpeciesConfig] = Body(
+            ...,
+            description="Species Configuration, specifying species name mapped to diffusion constant",
+            examples=[
+                [
+                    {"name": "E",  "diffusion_constant": 10.0},
+                    {"name": "S",  "diffusion_constant": 10.0},
+                    {"name": "ES", "diffusion_constant": 10.0},
+                    {"name": "P", "diffusion_constant": 10.0}
+                ]
+            ]
+        ),
+        reactions_config: List[ReaddyReactionConfig] = Body(
+            ...,
+            description="Reactions Configuration, specifying reaction scheme mapped to reaction constant.",
+            examples=[
+                [
+                    {"scheme": "fwd: E +(0.03) S -> ES", "rate": 86.78638438},
+                    {"scheme": "back: ES -> E +(0.03) S", "rate": 1.0},
+                    {"scheme": "prod: ES -> E +(0.03) P", "rate": 1.0},
+                ]
+            ]
+        ),
+        particles_config: List[ReaddyParticleConfig] = Body(
+            ...,
+            description="Particles Configuration, specifying initial particle positions for each particle.",
+            examples=[
+                [
+                    {
+                        "name": "E",
+                        "initial_positions": [
+                            [-0.11010841, 0.01048227, -0.07514985],
+                            [0.02715631, -0.03829782, 0.14395517],
+                            [0.05522253, -0.11880506, 0.02222362]
+                        ]
+                    },
+                    {
+                        "name": "S",
+                        "initial_positions": [
+                            [-0.21010841, 0.21048227, -0.07514985],
+                            [0.02715631, -0.03829782, 0.14395517],
+                            [0.05522253, -0.11880506, 0.02222362]
+                        ]
+                    }
+                ]
+            ]
+        ),
+        unit_system_config: Dict[str, str] = Body({"length_unit": "micrometer", "time_unit": "second"}, description="Unit system configuration"),
+        reaction_handler: str = Query(default="UncontrolledApproximation", description="Reaction handler as per Readdy simulation documentation.")
+) -> ReaddyRun:
+    try:
+        # get job params
+        job_id = "simulation-execution-readdy" + str(uuid.uuid4())
+        _time = db_conn_gateway.timestamp()
+        # instantiate new return
+        readdy_run = ReaddyRun(
+            job_id=job_id,
+            timestamp=_time,
+            box_size=box_size,
+            status="PENDING",
+            duration=duration,
+            dt=dt,
+            species_config=species_config,
+            reactions_config=reactions_config,
+            particles_config=particles_config,
+            unit_system_config={"length_unit": "micrometer", "time_unit": "second"},
+            reaction_handler="UncontrolledApproximation"
+        )
+
+        # insert job
+        pending_job = await db_conn_gateway.write(
+            collection_name=DEFAULT_JOB_COLLECTION_NAME,
+            box_size=readdy_run.box_size,
+            job_id=readdy_run.job_id,
+            timestamp=readdy_run.timestamp,
+            status=readdy_run.status,
+            duration=readdy_run.duration,
+            dt=readdy_run.dt,
+            species_config=[config.model_dump() for config in readdy_run.species_config],
+            reactions_config=[config.model_dump() for config in readdy_run.reactions_config],
+            particles_config=[config.model_dump() for config in readdy_run.particles_config],
+            unit_system_config=readdy_run.unit_system_config,
+            reaction_handler=readdy_run.reaction_handler
+        )
+        # return typed obj
+        return readdy_run
     except Exception as e:
         logger.error(str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -361,6 +462,51 @@ async def get_composition_state(job_id: str):
         raise HTTPException(status_code=500, detail=f"No specification found for job with id: {job_id}.")
 
 
+@app.post(
+    "/generate-simularium-file",
+    # response_model=PendingSimulariumJob,
+    operation_id='generate-simularium-file',
+    tags=["Files"],
+    summary='Generate a simularium file with a compatible simulation results file from either Smoldyn, SpringSaLaD, or ReaDDy.')
+async def generate_simularium_file(
+        uploaded_file: UploadFile = File(..., description="A file containing results that can be parse by Simularium (spatial)."),
+        box_size: float = Query(..., description="Size of the simulation box as a floating point number."),
+        filename: str = Query(default=None, description="Name desired for the simularium file. NOTE: pass only the file name without an extension."),
+        translate_output: bool = Query(default=True, description="Whether to translate the output trajectory prior to converting to simularium. See simulariumio documentation for more details."),
+        validate_output: bool = Query(default=True, description="Whether to validate the outputs for the simularium file. See simulariumio documentation for more details."),
+        agent_parameters: AgentParameters = Body(default=None, description="Parameters for the simularium agents defining either radius or mass and density.")
+):
+    job_id = "files-generate-simularium-file" + str(uuid.uuid4())
+    _time = db_conn_gateway.timestamp()
+    # upload_prefix, bucket_prefix = file_upload_prefix(job_id)
+    uploaded_file_location = await write_uploaded_file(job_id=job_id, uploaded_file=uploaded_file, bucket_name=DEFAULT_BUCKET_NAME, extension='.txt')
+    # new simularium job in db
+    if filename is None:
+        filename = 'simulation'
+    agent_params = {}
+    if agent_parameters is not None:
+        for agent_param in agent_parameters.agents:
+            agent_params[agent_param.name] = agent_param.model_dump()
+    new_job_submission = await db_conn_gateway.write(
+        collection_name=DEFAULT_JOB_COLLECTION_NAME,
+        status="PENDING",
+        job_id=job_id,
+        timestamp=_time,
+        path=uploaded_file_location,
+        filename=filename,
+        box_size=box_size,
+        translate_output=translate_output,
+        validate_output=validate_output,
+        agent_parameters=agent_params if agent_params is not {} else None
+    )
+    gen_id = new_job_submission.get('_id')
+    if gen_id is not None:
+        new_job_submission.pop('_id')
+    return new_job_submission
+    # except Exception as e:
+    # raise HTTPException(status_code=404, detail=f"A simularium file cannot be parsed from your input. Please check your input file and refer to the simulariumio documentation for more details.")
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=3001)
 
@@ -368,110 +514,7 @@ if __name__ == "__main__":
 
 #
 #
-# @app.post(
-#     "/run-readdy",
-#     response_model=ReaddyRun,
-#     name="Run a readdy simulation",
-#     operation_id="run-readdy",
-#     tags=["Simulation Execution"],
-#     summary="Run a readdy simulation.")
-# async def run_readdy(
-#         box_size: List[float] = Query(default=[0.3, 0.3, 0.3], description="Box Size of box"),
-#         duration: int = Query(default=10, description="Simulation Duration"),
-#         dt: float = Query(default=0.0008, description="Interval of step with which simulation runs"),
-#         species_config: List[ReaddySpeciesConfig] = Body(
-#             ...,
-#             description="Species Configuration, specifying species name mapped to diffusion constant",
-#             examples=[
-#                 [
-#                     {"name": "E",  "diffusion_constant": 10.0},
-#                     {"name": "S",  "diffusion_constant": 10.0},
-#                     {"name": "ES", "diffusion_constant": 10.0},
-#                     {"name": "P", "diffusion_constant": 10.0}
-#                 ]
-#             ]
-#         ),
-#         reactions_config: List[ReaddyReactionConfig] = Body(
-#             ...,
-#             description="Reactions Configuration, specifying reaction scheme mapped to reaction constant.",
-#             examples=[
-#                 [
-#                     {"scheme": "fwd: E +(0.03) S -> ES", "rate": 86.78638438},
-#                     {"scheme": "back: ES -> E +(0.03) S", "rate": 1.0},
-#                     {"scheme": "prod: ES -> E +(0.03) P", "rate": 1.0},
-#                 ]
-#             ]
-#         ),
-#         particles_config: List[ReaddyParticleConfig] = Body(
-#             ...,
-#             description="Particles Configuration, specifying initial particle positions for each particle.",
-#             examples=[
-#                 [
-#                     {
-#                         "name": "E",
-#                         "initial_positions": [
-#                             [-0.11010841, 0.01048227, -0.07514985],
-#                             [0.02715631, -0.03829782, 0.14395517],
-#                             [0.05522253, -0.11880506, 0.02222362]
-#                         ]
-#                     },
-#                     {
-#                         "name": "S",
-#                         "initial_positions": [
-#                             [-0.21010841, 0.21048227, -0.07514985],
-#                             [0.02715631, -0.03829782, 0.14395517],
-#                             [0.05522253, -0.11880506, 0.02222362]
-#                         ]
-#                     }
-#                 ]
-#             ]
-#         ),
-#         unit_system_config: Dict[str, str] = Body({"length_unit": "micrometer", "time_unit": "second"}, description="Unit system configuration"),
-#         reaction_handler: str = Query(default="UncontrolledApproximation", description="Reaction handler as per Readdy simulation documentation.")
-# ) -> ReaddyRun:
-#     try:
-#         # get job params
-#         job_id = "simulation-execution-readdy" + str(uuid.uuid4())
-#         _time = db_conn_gateway.timestamp()
-#
-#         # instantiate new return
-#         readdy_run = ReaddyRun(
-#             job_id=job_id,
-#             timestamp=_time,
-#             box_size=box_size,
-#             status=JobStatus.PENDING.value,
-#             duration=duration,
-#             dt=dt,
-#             simulators=["readdy"],
-#             species_config=species_config,
-#             reactions_config=reactions_config,
-#             particles_config=particles_config,
-#             unit_system_config=unit_system_config,
-#             reaction_handler=reaction_handler,
-#         )
-#
-#         # insert job
-#         pending_job = await db_conn_gateway.write(
-#             collection_name=DEFAULT_JOB_COLLECTION_NAME,
-#             box_size=readdy_run.box_size,
-#             job_id=readdy_run.job_id,
-#             timestamp=readdy_run.timestamp,
-#             status=readdy_run.status,
-#             duration=readdy_run.duration,
-#             dt=readdy_run.dt,
-#             simulators=readdy_run.simulators,
-#             species_config=[config.model_dump() for config in readdy_run.species_config],
-#             reactions_config=[config.model_dump() for config in readdy_run.reactions_config],
-#             particles_config=[config.model_dump() for config in readdy_run.particles_config],
-#             unit_system_config=readdy_run.unit_system_config,
-#             reaction_handler=readdy_run.reaction_handler
-#         )
-#
-#         # return typed obj
-#         return readdy_run
-#     except Exception as e:
-#         logger.error(str(e))
-#         raise HTTPException(status_code=500, detail=str(e))
+
 # @app.get(
 #     "/get-output-file/{job_id}",
 #     operation_id='get-output-file',
@@ -636,52 +679,6 @@ if __name__ == "__main__":
 #         raise HTTPException(status_code=404, detail=msg)
 
 
-# @app.post(
-#     "/generate-simularium-file",
-#     # response_model=PendingSimulariumJob,
-#     operation_id='generate-simularium-file',
-#     tags=["Files"],
-#     summary='Generate a simularium file with a compatible simulation results file from either Smoldyn, SpringSaLaD, or ReaDDy.')
-# async def generate_simularium_file(
-#         uploaded_file: UploadFile = File(..., description="A file containing results that can be parse by Simularium (spatial)."),
-#         box_size: float = Query(..., description="Size of the simulation box as a floating point number."),
-#         filename: str = Query(default=None, description="Name desired for the simularium file. NOTE: pass only the file name without an extension."),
-#         translate_output: bool = Query(default=True, description="Whether to translate the output trajectory prior to converting to simularium. See simulariumio documentation for more details."),
-#         validate_output: bool = Query(default=True, description="Whether to validate the outputs for the simularium file. See simulariumio documentation for more details."),
-#         agent_parameters: AgentParameters = Body(default=None, description="Parameters for the simularium agents defining either radius or mass and density.")
-# ):
-#     job_id = "files-generate-simularium-file" + str(uuid.uuid4())
-#     _time = db_conn_gateway.timestamp()
-#     # upload_prefix, bucket_prefix = file_upload_prefix(job_id)
-#     uploaded_file_location = await write_uploaded_file(job_id=job_id, uploaded_file=uploaded_file, bucket_name=DEFAULT_BUCKET_NAME, extension='.txt')
-#
-#     # new simularium job in db
-#     if filename is None:
-#         filename = 'simulation'
-#
-#     agent_params = {}
-#     if agent_parameters is not None:
-#         for agent_param in agent_parameters.agents:
-#             agent_params[agent_param.name] = agent_param.model_dump()
-#
-#     new_job_submission = await db_conn_gateway.write(
-#         collection_name=DEFAULT_JOB_COLLECTION_NAME,
-#         status=JobStatus.PENDING.value,
-#         job_id=job_id,
-#         timestamp=_time,
-#         path=uploaded_file_location,
-#         filename=filename,
-#         box_size=box_size,
-#         translate_output=translate_output,
-#         validate_output=validate_output,
-#         agent_parameters=agent_params if agent_params is not {} else None
-#     )
-#     gen_id = new_job_submission.get('_id')
-#     if gen_id is not None:
-#         new_job_submission.pop('_id')
-#
-#     return new_job_submission
-#     # except Exception as e:
-#     # raise HTTPException(status_code=404, detail=f"A simularium file cannot be parsed from your input. Please check your input file and refer to the simulariumio documentation for more details.")
+
 
 

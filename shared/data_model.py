@@ -84,9 +84,8 @@ class ReaddyRun(BaseModel):
     species_config: Union[Dict[str, float], List[ReaddySpeciesConfig]]
     particles_config: Union[Dict[str, List[List[float]]], List[ReaddyParticleConfig]]
     reactions_config: Union[Dict[str, float], List[ReaddyReactionConfig]]
-    simulators: Optional[List[str]] = ["readdy"]
-    unit_system_config: Optional[Dict[str, str]] = {"length_unit": "micrometer", "time_unit": "second"}
-    reaction_handler: Optional[str] = "UncontrolledApproximation"
+    unit_system_config: Dict[str, Any]
+    reaction_handler: str
 
 
 # IN PROGRESS JOBS:
@@ -115,13 +114,6 @@ class AgentParameters(BaseModel):
 
 class SmoldynOutput(FileResponse):
     pass
-
-
-class SmoldynRun(ApiRun):
-    duration: Optional[int] = None
-    dt: Optional[float] = None
-    simulators: List[str] = ["smoldyn"]
-
 
 
 class DbClientResponse(BaseModel):
@@ -237,4 +229,3 @@ class SmoldynRun(BaseClass):
     path: str
     duration: float
     dt: float
-    simulators: List[str] = ["smoldyn"]
