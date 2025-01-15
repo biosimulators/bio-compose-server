@@ -46,7 +46,7 @@ class RunsDispatcher(object):
         results_file = result.get('results_file')
         if results_file is not None:
             uploaded_file_location = await write_uploaded_file(
-                job_id=self.job_id,
+                job_id=job_id,
                 uploaded_file=results_file,
                 bucket_name=DEFAULT_BUCKET_NAME,
                 extension='.txt'

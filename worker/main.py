@@ -7,8 +7,7 @@ from dotenv import load_dotenv
 from shared.database import MongoConnector
 from shared.environment import ENV_PATH, DEFAULT_DB_NAME
 from shared.log_config import setup_logging
-from worker.job import JobDispatcher
-
+from worker.dispatch.composition_dispatch import CompositionDispatcher
 
 load_dotenv(ENV_PATH)  # NOTE: create an env config at this filepath if dev
 
@@ -24,7 +23,7 @@ GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 # singletons
 db_connector = MongoConnector(connection_uri=MONGO_URI, database_id=DEFAULT_DB_NAME)
-dispatcher = JobDispatcher(db_connector=db_connector)
+dispatcher = CompositionDispatcher(db_connector=db_connector)
 
 
 async def main(max_retries=MAX_RETRIES):
