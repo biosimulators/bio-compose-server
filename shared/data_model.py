@@ -1,7 +1,7 @@
 # -- gateway models -- #
 # -- worker models -- #
 import os
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from enum import Enum
 from typing import *
 
@@ -40,7 +40,7 @@ class CompositionRun(Run):
     simulators: List[str]
     duration: int
     spec: Dict[str, Any]
-    results: Dict[str, Any] = None
+    results: Dict[str, Any] = field(default=None)
 
 
 @dataclass
@@ -57,6 +57,27 @@ class UtcRun(Run):
     start: int
     stop: int
     steps: int
+    params: Dict[str, Any] = field(default=None)
+
+
+@dataclass
+class AmiciRun(UtcRun):
+    pass
+
+
+@dataclass
+class CobraRun(UtcRun):
+    pass
+
+
+@dataclass
+class CopasiRun(UtcRun):
+    pass
+
+
+@dataclass
+class TelluriumRun(UtcRun):
+    pass
 
 
 @dataclass
@@ -107,6 +128,7 @@ class DbClientResponse(BaseClass):
     message: str
     db_type: str  # ie: 'mongo', 'postgres', etc
     timestamp: str
+    status: str = field(default=None)  # either PASS or FAIL
 
 
 # -- process-bigraph specs --

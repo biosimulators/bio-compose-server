@@ -1,3 +1,9 @@
+"""
+Server gateway implementation.
+
+Author: Alexander Patrie <@AlexPatrie>
+"""
+
 import json
 import os
 import uuid
@@ -11,6 +17,9 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Query, APIRouter, 
 from pydantic import BeforeValidator
 from starlette.middleware.cors import CORSMiddleware
 
+from gateway.handlers.submit import submit_utc_run
+
+from gateway.handlers.health import check_client
 from shared.data_model import (
     BigraphRegistryAddresses,
     DbClientResponse,
@@ -24,7 +33,11 @@ from shared.data_model import (
     ReaddySpeciesConfig,
     ReaddyReactionConfig,
     ReaddyParticleConfig,
-    ReaddyRun
+    ReaddyRun,
+    AmiciRun,
+    CobraRun,
+    CopasiRun,
+    TelluriumRun
 )
 from shared.database import MongoConnector
 from shared.io import write_uploaded_file
@@ -35,8 +48,7 @@ from shared.environment import (
     DEFAULT_DB_NAME,
     DEFAULT_DB_TYPE,
     DEFAULT_JOB_COLLECTION_NAME,
-    DEFAULT_BUCKET_NAME,
-    PROJECT_ROOT_PATH
+    DEFAULT_BUCKET_NAME
 )
 # from shared.io import write_uploaded_file, download_file_from_bucket
 
@@ -107,35 +119,135 @@ app.mongo_client = db_conn_gateway.client
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
 
-# -- initialization logic --
-
-@app.on_event("startup")
-def start_client() -> DbClientResponse:
-    """TODO: generalize this to work with multiple client types. Currently using Mongo."""
-    _time = db_conn_gateway.timestamp()
-    try:
-        app.mongo_client.admin.command('ping')
-        msg = "Pinged your deployment. You successfully connected to MongoDB!"
-    except Exception as e:
-        msg = f"Failed to connect to MongoDB:\n{e}"
-    return DbClientResponse(message=msg, db_type=DEFAULT_DB_TYPE, timestamp=_time)
-
-
-@app.on_event("shutdown")
-def stop_mongo_client() -> DbClientResponse:
-    _time = db_conn_gateway.timestamp()
-    app.mongo_client.close()
-    return DbClientResponse(message=f"{DEFAULT_DB_TYPE} successfully closed!", db_type=DEFAULT_DB_TYPE, timestamp=_time)
-
-
-# -- endpoint logic -- #
-
-@app.get("/")
+@app.get(
+    "/",
+    tags=["Health"],
+    summary="Health check",
+)
 def root():
-    return {'root': 'https://compose.biosimulations.org'}
+    response = check_client(db_conn_gateway)
+    return {
+        "message": "Welcome to the BioCompose API",
+        "swagger_ui": "https://compose.biosimulations.org/docs",
+        "version": APP_VERSION,
+        "status": "running" if response.status == "PASS" else response
+    }
 
 
 # -- submit single simulator jobs --
+
+
+@app.post(
+    "/run-amici-process",
+    response_model=AmiciRun,
+    name="Run an Amici simulation",
+    operation_id="run-amici-process",
+    tags=["Processes"],
+    summary="Run a Amici simulation.")
+async def run_amici_process(
+    model_file: UploadFile = File(..., description="SBML file"),
+    start: int = Query(..., description="Start time"),
+    stop: int = Query(..., description="End time(duration)"),
+    steps: int = Query(..., description="Number of steps.")
+) -> AmiciRun:
+    run_data = await submit_utc_run(
+        db_connector=db_conn_gateway,
+        simulator="amici",
+        model_file=model_file,
+        implementation_scope="process",
+        start=start,
+        stop=stop,
+        steps=steps,
+        context_model=AmiciRun,
+        logger=logger
+    )
+
+    return run_data
+
+
+@app.post(
+    "/run-cobra-process",
+    response_model=CobraRun,
+    name="Run an cobra simulation",
+    operation_id="run-cobra-process",
+    tags=["Processes"],
+    summary="Run a cobra simulation.")
+async def run_cobra_process(
+    model_file: UploadFile = File(..., description="SBML file"),
+    start: int = Query(..., description="Start time"),
+    stop: int = Query(..., description="End time(duration)"),
+    steps: int = Query(..., description="Number of steps.")
+) -> CobraRun:
+    run_data = await submit_utc_run(
+        db_connector=db_conn_gateway,
+        simulator="cobra",
+        model_file=model_file,
+        implementation_scope="process",
+        start=start,
+        stop=stop,
+        steps=steps,
+        context_model=CobraRun,
+        logger=logger
+    )
+
+    return run_data
+
+
+@app.post(
+    "/run-copasi-process",
+    response_model=CopasiRun,
+    name="Run an copasi simulation",
+    operation_id="run-copasi-process",
+    tags=["Processes"],
+    summary="Run a copasi simulation.")
+async def run_copasi_process(
+    model_file: UploadFile = File(..., description="SBML file"),
+    start: int = Query(..., description="Start time"),
+    stop: int = Query(..., description="End time(duration)"),
+    steps: int = Query(..., description="Number of steps.")
+) -> CopasiRun:
+    run_data = await submit_utc_run(
+        db_connector=db_conn_gateway,
+        simulator="copasi",
+        model_file=model_file,
+        implementation_scope="process",
+        start=start,
+        stop=stop,
+        steps=steps,
+        context_model=CopasiRun,
+        logger=logger
+    )
+
+    return run_data
+
+
+@app.post(
+    "/run-tellurium-process",
+    response_model=TelluriumRun,
+    name="Run an tellurium simulation",
+    operation_id="run-tellurium-process",
+    tags=["Processes"],
+    summary="Run a tellurium simulation.")
+async def run_tellurium_process(
+    model_file: UploadFile = File(..., description="SBML file"),
+    start: int = Query(..., description="Start time"),
+    stop: int = Query(..., description="End time(duration)"),
+    steps: int = Query(..., description="Number of steps.")
+) -> TelluriumRun:
+    run_data = await submit_utc_run(
+        db_connector=db_conn_gateway,
+        simulator="tellurium",
+        model_file=model_file,
+        implementation_scope="process",
+        start=start,
+        stop=stop,
+        steps=steps,
+        context_model=TelluriumRun,
+        logger=logger
+    )
+
+    return run_data
+
 
 @app.post(
     "/run-smoldyn-process",
@@ -405,9 +517,6 @@ async def submit_composition(
             duration=duration,
             results={}
         )
-
-        with open(os.path.join(PROJECT_ROOT_PATH, "tests", "test_fixtures", "test_request.json"), "w") as f:
-            json.dump(write_confirmation, f, indent=4)
 
         return CompositionRun(**write_confirmation)
     except json.JSONDecodeError:
