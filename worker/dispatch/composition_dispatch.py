@@ -127,29 +127,6 @@ def test_dispatcher():
     from shared.data_model import CompositionRun
     import asyncio
 
-    dispatcher = CompositionDispatcher(connection_uri=DEFAULT_LOCAL_MONGO_URI, database_id=DEFAULT_DB_NAME)
-    jid = "test"
-
-    test_run = CompositionRun(
-        job_id=jid,
-        last_updated="n/a",
-        simulators=['copasi'],
-        duration=1,
-        spec={'a': {}},
-        status="PENDING",
-        results={}
-    )
-
-    confirmation = asyncio.run(
-        dispatcher.db_connector.write(collection_name=DEFAULT_JOB_COLLECTION_NAME, **test_run.to_dict())
-    )
-
-    print(f'STORED: {confirmation}')
-
-    asyncio.run(
-        dispatcher.run()
-    )
-
 
 
 

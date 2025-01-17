@@ -9,7 +9,7 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import UpdateResult
 
-from shared.environment import DEFAULT_JOB_COLLECTION_NAME, DEFAULT_LOCAL_MONGO_URI, DEFAULT_DB_NAME
+from shared.environment import DEFAULT_JOB_COLLECTION_NAME, DEFAULT_DB_NAME
 
 
 class DatabaseConnector(ABC):
@@ -146,8 +146,4 @@ class MongoConnector(DatabaseConnector):
         for job in self.db[coll].find():
             self.db[coll].delete_one(job)
 
-
-def test_mongo_connector():
-    conn = MongoConnector(connection_uri=DEFAULT_LOCAL_MONGO_URI, database_id=DEFAULT_DB_NAME, connector_id="test")
-    conn.confirm_connection()
 
