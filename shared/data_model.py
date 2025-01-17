@@ -22,62 +22,63 @@ class BaseClass:
     def to_dict(self):
         return asdict(self)
 
+    def serialize(self):
+        return asdict(self)
+
+
+# -- requests --
 
 @dataclass
-class WriteResponse(BaseClass):
-    result: int
-
-    @property
-    def status(self):
-        return "success" if self.result == 0 else "failed"
-
-
-class SBMLSpeciesMapping(dict):
-    pass
-
-
-# PENDING JOBS:
-
-class JobStatus(Enum):
-    PENDING = "PENDING"
-    IN_PROGRESS = "IN_PROGRESS"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
-
-
-class DatabaseCollections(Enum):
-    PENDING_JOBS = "PENDING_JOBS".lower()
-    IN_PROGRESS_JOBS = "IN_PROGRESS_JOBS".lower()
-    COMPLETED_JOBS = "COMPLETED_JOBS".lower()
-
-
-class ApiRun(BaseModel):
+class Run(BaseClass):
     job_id: str
-    timestamp: str
+    last_updated: str
     status: str
-    path: str
+
+
+@dataclass
+class CompositionRun(Run):
     simulators: List[str]
+    duration: int
+    spec: Dict[str, Any]
+    results: Dict[str, Any] = None
 
 
-class ReaddySpeciesConfig(BaseModel):
+@dataclass
+class SmoldynRun(Run):
+    path: str
+    duration: float
+    dt: float
+
+
+@dataclass
+class UtcRun(Run):
+    simulator: str
+    model_file: str
+    start: int
+    stop: int
+    steps: int
+
+
+@dataclass
+class ReaddySpeciesConfig(BaseClass):
     name: str
     diffusion_constant: float
 
 
-class ReaddyReactionConfig(BaseModel):
+@dataclass
+class ReaddyReactionConfig(BaseClass):
     scheme: str
     rate: float
 
 
-class ReaddyParticleConfig(BaseModel):
+@dataclass
+class ReaddyParticleConfig(BaseClass):
     name: str
     initial_positions: List[List[float]]
 
 
-class ReaddyRun(BaseModel):
-    job_id: str
-    timestamp: str
-    status: str
+@dataclass
+class ReaddyRun(Run):
     duration: float
     dt: float
     box_size: List[float]
@@ -88,43 +89,30 @@ class ReaddyRun(BaseModel):
     reaction_handler: str
 
 
-# IN PROGRESS JOBS:
-
-# TODO: Implement this:
-class IncompleteJob(BaseModel):
-    job_id: str
-    timestamp: str
-    status: str
-    source: Optional[str] = None
-
-
-# -- spatial (readdy/smoldyn) --
-
-
-class AgentParameter(BaseModel):
+@dataclass
+class SimulariumAgentParameter(BaseClass):
     name: str
     radius: Optional[float]
     mass: Optional[float]
     density: Optional[float]
 
 
-class AgentParameters(BaseModel):
-    agents: List[AgentParameter]
+@dataclass
+class SimulariumAgentParameters(BaseClass):
+    agents: List[SimulariumAgentParameter]
 
 
-class SmoldynOutput(FileResponse):
-    pass
-
-
-class DbClientResponse(BaseModel):
+@dataclass
+class DbClientResponse(BaseClass):
     message: str
     db_type: str  # ie: 'mongo', 'postgres', etc
     timestamp: str
 
 
-# -- process-bigraph specs -- TODO: implement this!
+# -- process-bigraph specs --
 
-class BigraphRegistryAddresses(BaseModel):
+@dataclass
+class BigraphRegistryAddresses(BaseClass):
     version: str
     registered_addresses: List[str]
 
@@ -196,16 +184,7 @@ class CompositionSpec(BaseClass):
         }
 
 
-@dataclass
-class CompositionRun(BaseClass):
-    job_id: str
-    last_updated: str
-    simulators: List[str]
-    duration: int
-    spec: Dict[str, Any]
-    status: str = "PENDING"
-    results: Dict[str, Any] = None
-
+# -- output data/responses --
 
 @dataclass
 class OutputData(BaseClass):
@@ -215,17 +194,24 @@ class OutputData(BaseClass):
     results: Dict
 
 
+class SmoldynOutput(FileResponse):
+    pass
+
+
 @dataclass
 class ValidatedComposition(BaseClass):
     state: Dict[str, Any]
     valid: bool
 
 
-@dataclass
-class SmoldynRun(BaseClass):
-    job_id: str
-    timestamp: str
-    status: str
-    path: str
-    duration: float
-    dt: float
+# -- misc --
+
+class JobStatuses:
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+
+
+

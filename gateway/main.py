@@ -12,21 +12,19 @@ from pydantic import BeforeValidator
 from starlette.middleware.cors import CORSMiddleware
 
 from shared.data_model import (
-    # ReaddySpeciesConfig,
-    # ReaddyReactionConfig,
-    # ReaddyParticleConfig,
-    # ReaddyRun,
-    # SmoldynRun,
-    # AgentParameters,
-    # IncompleteJob,
-    # JobStatus,
     BigraphRegistryAddresses,
     DbClientResponse,
     CompositionNode,
     CompositionSpec,
     CompositionRun,
     OutputData,
-    ValidatedComposition, SmoldynRun, AgentParameters, ReaddySpeciesConfig, ReaddyReactionConfig, ReaddyParticleConfig, ReaddyRun
+    ValidatedComposition,
+    SmoldynRun,
+    SimulariumAgentParameters,
+    ReaddySpeciesConfig,
+    ReaddyReactionConfig,
+    ReaddyParticleConfig,
+    ReaddyRun
 )
 from shared.database import MongoConnector
 from shared.io import write_uploaded_file
@@ -474,7 +472,7 @@ async def generate_simularium_file(
         filename: str = Query(default=None, description="Name desired for the simularium file. NOTE: pass only the file name without an extension."),
         translate_output: bool = Query(default=True, description="Whether to translate the output trajectory prior to converting to simularium. See simulariumio documentation for more details."),
         validate_output: bool = Query(default=True, description="Whether to validate the outputs for the simularium file. See simulariumio documentation for more details."),
-        agent_parameters: AgentParameters = Body(default=None, description="Parameters for the simularium agents defining either radius or mass and density.")
+        agent_parameters: SimulariumAgentParameters = Body(default=None, description="Parameters for the simularium agents defining either radius or mass and density.")
 ):
     job_id = "files-generate-simularium-file" + str(uuid.uuid4())
     _time = db_conn_gateway.timestamp()
