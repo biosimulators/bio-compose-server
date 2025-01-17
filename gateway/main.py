@@ -158,7 +158,7 @@ async def run_smoldyn_process(
         # instantiate new return
         smoldyn_run = SmoldynRun(
             job_id=job_id,
-            timestamp=_time,
+            last_updated=_time,
             status="PENDING",
             path=uploaded_file_location,
             duration=duration,
@@ -168,7 +168,7 @@ async def run_smoldyn_process(
         pending_job = await db_conn_gateway.write(
             collection_name="smoldyn_jobs",
             job_id=smoldyn_run.job_id,
-            timestamp=smoldyn_run.timestamp,
+            last_updated=smoldyn_run.last_updated,
             status=smoldyn_run.status,
             path=smoldyn_run.path,
             duration=smoldyn_run.duration,
@@ -246,10 +246,11 @@ async def run_readdy_process(
         # get job params
         job_id = "simulation-execution-readdy" + str(uuid.uuid4())
         _time = db_conn_gateway.timestamp()
+
         # instantiate new return
         readdy_run = ReaddyRun(
             job_id=job_id,
-            timestamp=_time,
+            last_updated=_time,
             box_size=box_size,
             status="PENDING",
             duration=duration,
@@ -266,17 +267,17 @@ async def run_readdy_process(
             collection_name=DEFAULT_JOB_COLLECTION_NAME,
             box_size=readdy_run.box_size,
             job_id=readdy_run.job_id,
-            timestamp=readdy_run.timestamp,
+            last_updated=readdy_run.last_updated,
             status=readdy_run.status,
             duration=readdy_run.duration,
             dt=readdy_run.dt,
-            species_config=[config.model_dump() for config in readdy_run.species_config],
-            reactions_config=[config.model_dump() for config in readdy_run.reactions_config],
-            particles_config=[config.model_dump() for config in readdy_run.particles_config],
+            species_config=[config.serialize() for config in readdy_run.species_config],
+            reactions_config=[config.serialize() for config in readdy_run.reactions_config],
+            particles_config=[config.serialize() for config in readdy_run.particles_config],
             unit_system_config=readdy_run.unit_system_config,
             reaction_handler=readdy_run.reaction_handler
         )
-        # return typed obj
+
         return readdy_run
     except Exception as e:
         logger.error(str(e))
@@ -478,13 +479,15 @@ async def generate_simularium_file(
     _time = db_conn_gateway.timestamp()
     # upload_prefix, bucket_prefix = file_upload_prefix(job_id)
     uploaded_file_location = await write_uploaded_file(job_id=job_id, uploaded_file=uploaded_file, bucket_name=DEFAULT_BUCKET_NAME, extension='.txt')
+
     # new simularium job in db
     if filename is None:
         filename = 'simulation'
     agent_params = {}
     if agent_parameters is not None:
         for agent_param in agent_parameters.agents:
-            agent_params[agent_param.name] = agent_param.model_dump()
+            agent_params[agent_param.name] = agent_param.serialize()
+
     new_job_submission = await db_conn_gateway.write(
         collection_name=DEFAULT_JOB_COLLECTION_NAME,
         status="PENDING",
