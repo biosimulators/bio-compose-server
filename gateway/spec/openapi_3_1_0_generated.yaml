@@ -5,7 +5,9 @@ info:
 paths:
   /:
     get:
-      summary: Root
+      tags:
+      - Health
+      summary: Health check
       operationId: root__get
       responses:
         '200':
@@ -13,115 +15,6 @@ paths:
           content:
             application/json:
               schema: {}
-  /run-smoldyn-process:
-    post:
-      tags:
-      - Processes
-      summary: Run a smoldyn simulation.
-      operationId: run-smoldyn-process
-      parameters:
-      - name: duration
-        in: query
-        required: false
-        schema:
-          type: integer
-          description: Simulation Duration
-          title: Duration
-        description: Simulation Duration
-      - name: dt
-        in: query
-        required: false
-        schema:
-          type: number
-          description: Interval of step with which simulation runs
-          title: Dt
-        description: Interval of step with which simulation runs
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Body_run-smoldyn-process'
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SmoldynRun'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /run-readdy-process:
-    post:
-      tags:
-      - Processes
-      summary: Run a readdy simulation.
-      operationId: run-readdy-process
-      parameters:
-      - name: box_size
-        in: query
-        required: false
-        schema:
-          type: array
-          items:
-            type: number
-          description: Box Size of box
-          default:
-          - 0.3
-          - 0.3
-          - 0.3
-          title: Box Size
-        description: Box Size of box
-      - name: duration
-        in: query
-        required: false
-        schema:
-          type: integer
-          description: Simulation Duration
-          default: 10
-          title: Duration
-        description: Simulation Duration
-      - name: dt
-        in: query
-        required: false
-        schema:
-          type: number
-          description: Interval of step with which simulation runs
-          default: 0.0008
-          title: Dt
-        description: Interval of step with which simulation runs
-      - name: reaction_handler
-        in: query
-        required: false
-        schema:
-          type: string
-          description: Reaction handler as per Readdy simulation documentation.
-          default: UncontrolledApproximation
-          title: Reaction Handler
-        description: Reaction handler as per Readdy simulation documentation.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Body_run-readdy-process'
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReaddyRun'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
   /get-process-bigraph-addresses:
     get:
       tags:
@@ -199,32 +92,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompositionRun'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /get-output/{job_id}:
-    get:
-      tags:
-      - Results
-      summary: Get the results of an existing simulation run.
-      operationId: get-output
-      parameters:
-      - name: job_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Job Id
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OutputData'
         '422':
           description: Validation Error
           content:
@@ -322,46 +189,609 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /run-amici-process:
+    post:
+      tags:
+      - Processes
+      summary: Run a Amici simulation.
+      operationId: run-amici-process
+      parameters:
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Start time
+          title: Start
+        description: Start time
+      - name: stop
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: End time(duration)
+          title: Stop
+        description: End time(duration)
+      - name: steps
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Number of steps.
+          title: Steps
+        description: Number of steps.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_run-amici-process'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AmiciRun'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /run-cobra-process:
+    post:
+      tags:
+      - Processes
+      summary: Run a cobra simulation.
+      operationId: run-cobra-process
+      parameters:
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Start time
+          title: Start
+        description: Start time
+      - name: stop
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: End time(duration)
+          title: Stop
+        description: End time(duration)
+      - name: steps
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Number of steps.
+          title: Steps
+        description: Number of steps.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_run-cobra-process'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CobraRun'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /run-copasi-process:
+    post:
+      tags:
+      - Processes
+      summary: Run a copasi simulation.
+      operationId: run-copasi-process
+      parameters:
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Start time
+          title: Start
+        description: Start time
+      - name: stop
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: End time(duration)
+          title: Stop
+        description: End time(duration)
+      - name: steps
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Number of steps.
+          title: Steps
+        description: Number of steps.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_run-copasi-process'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CopasiRun'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /run-tellurium-process:
+    post:
+      tags:
+      - Processes
+      summary: Run a tellurium simulation.
+      operationId: run-tellurium-process
+      parameters:
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Start time
+          title: Start
+        description: Start time
+      - name: stop
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: End time(duration)
+          title: Stop
+        description: End time(duration)
+      - name: steps
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Number of steps.
+          title: Steps
+        description: Number of steps.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_run-tellurium-process'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelluriumRun'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /get-output/{job_id}:
+    get:
+      tags:
+      - Results
+      summary: Get the results of an existing simulation run.
+      operationId: get-output
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Job Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutputData'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /get-output-file/{job_id}:
+    get:
+      tags:
+      - Results
+      summary: Get the results of an existing simulation run from Smoldyn or Readdy
+        as either a downloadable file or job progression status.
+      operationId: get-output-file
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Job Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /run-amici-step:
+    post:
+      tags:
+      - Steps
+      summary: Run a Amici simulation.
+      operationId: run-amici-step
+      parameters:
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Start time
+          title: Start
+        description: Start time
+      - name: stop
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: End time(duration)
+          title: Stop
+        description: End time(duration)
+      - name: steps
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Number of steps.
+          title: Steps
+        description: Number of steps.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_run-amici-step'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AmiciRun'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /run-cobra-step:
+    post:
+      tags:
+      - Steps
+      summary: Run a cobra simulation.
+      operationId: run-cobra-step
+      parameters:
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Start time
+          title: Start
+        description: Start time
+      - name: stop
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: End time(duration)
+          title: Stop
+        description: End time(duration)
+      - name: steps
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Number of steps.
+          title: Steps
+        description: Number of steps.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_run-cobra-step'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CobraRun'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /run-copasi-step:
+    post:
+      tags:
+      - Steps
+      summary: Run a copasi simulation.
+      operationId: run-copasi-step
+      parameters:
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Start time
+          title: Start
+        description: Start time
+      - name: stop
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: End time(duration)
+          title: Stop
+        description: End time(duration)
+      - name: steps
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Number of steps.
+          title: Steps
+        description: Number of steps.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_run-copasi-step'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CopasiRun'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /run-readdy-step:
+    post:
+      tags:
+      - Steps
+      summary: Run a readdy simulation.
+      operationId: run-readdy-step
+      parameters:
+      - name: box_size
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: number
+          description: Box Size of box
+          default:
+          - 0.3
+          - 0.3
+          - 0.3
+          title: Box Size
+        description: Box Size of box
+      - name: duration
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Simulation Duration
+          default: 10
+          title: Duration
+        description: Simulation Duration
+      - name: dt
+        in: query
+        required: false
+        schema:
+          type: number
+          description: Interval of step with which simulation runs
+          default: 0.0008
+          title: Dt
+        description: Interval of step with which simulation runs
+      - name: reaction_handler
+        in: query
+        required: false
+        schema:
+          type: string
+          description: Reaction handler as per Readdy simulation documentation.
+          default: UncontrolledApproximation
+          title: Reaction Handler
+        description: Reaction handler as per Readdy simulation documentation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Body_run-readdy-step'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReaddyRun'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /run-smoldyn-step:
+    post:
+      tags:
+      - Steps
+      summary: Run a smoldyn simulation.
+      operationId: run-smoldyn-step
+      parameters:
+      - name: duration
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Simulation Duration
+          title: Duration
+        description: Simulation Duration
+      - name: dt
+        in: query
+        required: false
+        schema:
+          type: number
+          description: Interval of step with which simulation runs
+          title: Dt
+        description: Interval of step with which simulation runs
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_run-smoldyn-step'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SmoldynRun'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /run-tellurium-step:
+    post:
+      tags:
+      - Steps
+      summary: Run a tellurium simulation.
+      operationId: run-tellurium-step
+      parameters:
+      - name: start
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Start time
+          title: Start
+        description: Start time
+      - name: stop
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: End time(duration)
+          title: Stop
+        description: End time(duration)
+      - name: steps
+        in: query
+        required: true
+        schema:
+          type: integer
+          description: Number of steps.
+          title: Steps
+        description: Number of steps.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_run-tellurium-step'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelluriumRun'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
-    AgentParameter:
+    AmiciRun:
       properties:
-        name:
+        job_id:
           type: string
-          title: Name
-        radius:
-          anyOf:
-          - type: number
-          - type: 'null'
-          title: Radius
-        mass:
-          anyOf:
-          - type: number
-          - type: 'null'
-          title: Mass
-        density:
-          anyOf:
-          - type: number
-          - type: 'null'
-          title: Density
+          title: Job Id
+        last_updated:
+          type: string
+          title: Last Updated
+        status:
+          type: string
+          title: Status
+        simulator:
+          type: string
+          title: Simulator
+        model_file:
+          type: string
+          title: Model File
+        start:
+          type: integer
+          title: Start
+        stop:
+          type: integer
+          title: Stop
+        steps:
+          type: integer
+          title: Steps
+        params:
+          type: object
+          title: Params
       type: object
       required:
-      - name
-      - radius
-      - mass
-      - density
-      title: AgentParameter
-    AgentParameters:
-      properties:
-        agents:
-          items:
-            $ref: '#/components/schemas/AgentParameter'
-          type: array
-          title: Agents
-      type: object
-      required:
-      - agents
-      title: AgentParameters
+      - job_id
+      - last_updated
+      - status
+      - simulator
+      - model_file
+      - start
+      - stop
+      - steps
+      title: AmiciRun
     BigraphRegistryAddresses:
       properties:
         version:
@@ -385,14 +815,80 @@ components:
           title: Uploaded File
           description: A file containing results that can be parse by Simularium (spatial).
         agent_parameters:
-          $ref: '#/components/schemas/AgentParameters'
+          $ref: '#/components/schemas/SimulariumAgentParameters'
           description: Parameters for the simularium agents defining either radius
             or mass and density.
       type: object
       required:
       - uploaded_file
       title: Body_generate-simularium-file
-    Body_run-readdy-process:
+    Body_run-amici-process:
+      properties:
+        model_file:
+          type: string
+          format: binary
+          title: Model File
+          description: SBML file
+      type: object
+      required:
+      - model_file
+      title: Body_run-amici-process
+    Body_run-amici-step:
+      properties:
+        model_file:
+          type: string
+          format: binary
+          title: Model File
+          description: SBML file
+      type: object
+      required:
+      - model_file
+      title: Body_run-amici-step
+    Body_run-cobra-process:
+      properties:
+        model_file:
+          type: string
+          format: binary
+          title: Model File
+          description: SBML file
+      type: object
+      required:
+      - model_file
+      title: Body_run-cobra-process
+    Body_run-cobra-step:
+      properties:
+        model_file:
+          type: string
+          format: binary
+          title: Model File
+          description: SBML file
+      type: object
+      required:
+      - model_file
+      title: Body_run-cobra-step
+    Body_run-copasi-process:
+      properties:
+        model_file:
+          type: string
+          format: binary
+          title: Model File
+          description: SBML file
+      type: object
+      required:
+      - model_file
+      title: Body_run-copasi-process
+    Body_run-copasi-step:
+      properties:
+        model_file:
+          type: string
+          format: binary
+          title: Model File
+          description: SBML file
+      type: object
+      required:
+      - model_file
+      title: Body_run-copasi-step
+    Body_run-readdy-step:
       properties:
         species_config:
           items:
@@ -468,8 +964,8 @@ components:
       - species_config
       - reactions_config
       - particles_config
-      title: Body_run-readdy-process
-    Body_run-smoldyn-process:
+      title: Body_run-readdy-step
+    Body_run-smoldyn-step:
       properties:
         uploaded_file:
           type: string
@@ -479,7 +975,29 @@ components:
       type: object
       required:
       - uploaded_file
-      title: Body_run-smoldyn-process
+      title: Body_run-smoldyn-step
+    Body_run-tellurium-process:
+      properties:
+        model_file:
+          type: string
+          format: binary
+          title: Model File
+          description: SBML file
+      type: object
+      required:
+      - model_file
+      title: Body_run-tellurium-process
+    Body_run-tellurium-step:
+      properties:
+        model_file:
+          type: string
+          format: binary
+          title: Model File
+          description: SBML file
+      type: object
+      required:
+      - model_file
+      title: Body_run-tellurium-step
     Body_submit-composition:
       properties:
         spec_file:
@@ -509,6 +1027,46 @@ components:
       required:
       - spec_file
       title: Body_validate-composition
+    CobraRun:
+      properties:
+        job_id:
+          type: string
+          title: Job Id
+        last_updated:
+          type: string
+          title: Last Updated
+        status:
+          type: string
+          title: Status
+        simulator:
+          type: string
+          title: Simulator
+        model_file:
+          type: string
+          title: Model File
+        start:
+          type: integer
+          title: Start
+        stop:
+          type: integer
+          title: Stop
+        steps:
+          type: integer
+          title: Steps
+        params:
+          type: object
+          title: Params
+      type: object
+      required:
+      - job_id
+      - last_updated
+      - status
+      - simulator
+      - model_file
+      - start
+      - stop
+      - steps
+      title: CobraRun
     CompositionRun:
       properties:
         job_id:
@@ -517,6 +1075,9 @@ components:
         last_updated:
           type: string
           title: Last Updated
+        status:
+          type: string
+          title: Status
         simulators:
           items:
             type: string
@@ -528,10 +1089,6 @@ components:
         spec:
           type: object
           title: Spec
-        status:
-          type: string
-          title: Status
-          default: PENDING
         results:
           type: object
           title: Results
@@ -539,10 +1096,51 @@ components:
       required:
       - job_id
       - last_updated
+      - status
       - simulators
       - duration
       - spec
       title: CompositionRun
+    CopasiRun:
+      properties:
+        job_id:
+          type: string
+          title: Job Id
+        last_updated:
+          type: string
+          title: Last Updated
+        status:
+          type: string
+          title: Status
+        simulator:
+          type: string
+          title: Simulator
+        model_file:
+          type: string
+          title: Model File
+        start:
+          type: integer
+          title: Start
+        stop:
+          type: integer
+          title: Stop
+        steps:
+          type: integer
+          title: Steps
+        params:
+          type: object
+          title: Params
+      type: object
+      required:
+      - job_id
+      - last_updated
+      - status
+      - simulator
+      - model_file
+      - start
+      - stop
+      - steps
+      title: CopasiRun
     HTTPValidationError:
       properties:
         detail:
@@ -608,9 +1206,9 @@ components:
         job_id:
           type: string
           title: Job Id
-        timestamp:
+        last_updated:
           type: string
-          title: Timestamp
+          title: Last Updated
         status:
           type: string
           title: Status
@@ -665,7 +1263,7 @@ components:
       type: object
       required:
       - job_id
-      - timestamp
+      - last_updated
       - status
       - duration
       - dt
@@ -689,14 +1287,52 @@ components:
       - name
       - diffusion_constant
       title: ReaddySpeciesConfig
+    SimulariumAgentParameter:
+      properties:
+        name:
+          type: string
+          title: Name
+        radius:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Radius
+        mass:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Mass
+        density:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Density
+      type: object
+      required:
+      - name
+      - radius
+      - mass
+      - density
+      title: SimulariumAgentParameter
+    SimulariumAgentParameters:
+      properties:
+        agents:
+          items:
+            $ref: '#/components/schemas/SimulariumAgentParameter'
+          type: array
+          title: Agents
+      type: object
+      required:
+      - agents
+      title: SimulariumAgentParameters
     SmoldynRun:
       properties:
         job_id:
           type: string
           title: Job Id
-        timestamp:
+        last_updated:
           type: string
-          title: Timestamp
+          title: Last Updated
         status:
           type: string
           title: Status
@@ -712,12 +1348,52 @@ components:
       type: object
       required:
       - job_id
-      - timestamp
+      - last_updated
       - status
       - path
       - duration
       - dt
       title: SmoldynRun
+    TelluriumRun:
+      properties:
+        job_id:
+          type: string
+          title: Job Id
+        last_updated:
+          type: string
+          title: Last Updated
+        status:
+          type: string
+          title: Status
+        simulator:
+          type: string
+          title: Simulator
+        model_file:
+          type: string
+          title: Model File
+        start:
+          type: integer
+          title: Start
+        stop:
+          type: integer
+          title: Stop
+        steps:
+          type: integer
+          title: Steps
+        params:
+          type: object
+          title: Params
+      type: object
+      required:
+      - job_id
+      - last_updated
+      - status
+      - simulator
+      - model_file
+      - start
+      - stop
+      - steps
+      title: TelluriumRun
     ValidatedComposition:
       properties:
         state:

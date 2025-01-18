@@ -446,153 +446,6 @@ async def run_tellurium_process(
     return run_data
 
 
-@app.post(
-    "/run-smoldyn-process",
-    response_model=SmoldynRun,
-    name="Run a smoldyn simulation",
-    operation_id="run-smoldyn-process",
-    tags=["Processes"],
-    summary="Run a smoldyn simulation.")
-async def run_smoldyn_process(
-        uploaded_file: UploadFile = File(..., description="Smoldyn Configuration File"),
-        duration: int = Query(default=None, description="Simulation Duration"),
-        dt: float = Query(default=None, description="Interval of step with which simulation runs"),
-        # initial_molecule_state: List = Body(default=None, description="Mapping of species names to initial molecule conditions including counts and location.")
-) -> SmoldynRun:
-    try:
-        # get job params
-        job_id = "simulation-execution-smoldyn" + str(uuid.uuid4())
-        _time = db_conn_gateway.timestamp()
-        uploaded_file_location = await write_uploaded_file(job_id=job_id, uploaded_file=uploaded_file, bucket_name=DEFAULT_BUCKET_NAME, extension='.txt')
-        # instantiate new return
-        smoldyn_run = SmoldynRun(
-            job_id=job_id,
-            last_updated=_time,
-            status="PENDING",
-            path=uploaded_file_location,
-            duration=duration,
-            dt=dt
-        )
-        # insert job
-        pending_job = await db_conn_gateway.write(
-            collection_name="smoldyn_jobs",
-            job_id=smoldyn_run.job_id,
-            last_updated=smoldyn_run.last_updated,
-            status=smoldyn_run.status,
-            path=smoldyn_run.path,
-            duration=smoldyn_run.duration,
-            dt=smoldyn_run.dt
-        )
-
-        return smoldyn_run
-    except Exception as e:
-        logger.error(str(e))
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post(
-    "/run-readdy-process",
-    response_model=ReaddyRun,
-    name="Run a readdy simulation",
-    operation_id="run-readdy-process",
-    tags=["Processes"],
-    summary="Run a readdy simulation.")
-async def run_readdy_process(
-        box_size: List[float] = Query(default=[0.3, 0.3, 0.3], description="Box Size of box"),
-        duration: int = Query(default=10, description="Simulation Duration"),
-        dt: float = Query(default=0.0008, description="Interval of step with which simulation runs"),
-        species_config: List[ReaddySpeciesConfig] = Body(
-            ...,
-            description="Species Configuration, specifying species name mapped to diffusion constant",
-            examples=[
-                [
-                    {"name": "E",  "diffusion_constant": 10.0},
-                    {"name": "S",  "diffusion_constant": 10.0},
-                    {"name": "ES", "diffusion_constant": 10.0},
-                    {"name": "P", "diffusion_constant": 10.0}
-                ]
-            ]
-        ),
-        reactions_config: List[ReaddyReactionConfig] = Body(
-            ...,
-            description="Reactions Configuration, specifying reaction scheme mapped to reaction constant.",
-            examples=[
-                [
-                    {"scheme": "fwd: E +(0.03) S -> ES", "rate": 86.78638438},
-                    {"scheme": "back: ES -> E +(0.03) S", "rate": 1.0},
-                    {"scheme": "prod: ES -> E +(0.03) P", "rate": 1.0},
-                ]
-            ]
-        ),
-        particles_config: List[ReaddyParticleConfig] = Body(
-            ...,
-            description="Particles Configuration, specifying initial particle positions for each particle.",
-            examples=[
-                [
-                    {
-                        "name": "E",
-                        "initial_positions": [
-                            [-0.11010841, 0.01048227, -0.07514985],
-                            [0.02715631, -0.03829782, 0.14395517],
-                            [0.05522253, -0.11880506, 0.02222362]
-                        ]
-                    },
-                    {
-                        "name": "S",
-                        "initial_positions": [
-                            [-0.21010841, 0.21048227, -0.07514985],
-                            [0.02715631, -0.03829782, 0.14395517],
-                            [0.05522253, -0.11880506, 0.02222362]
-                        ]
-                    }
-                ]
-            ]
-        ),
-        unit_system_config: Dict[str, str] = Body({"length_unit": "micrometer", "time_unit": "second"}, description="Unit system configuration"),
-        reaction_handler: str = Query(default="UncontrolledApproximation", description="Reaction handler as per Readdy simulation documentation.")
-) -> ReaddyRun:
-    try:
-        # get job params
-        job_id = "simulation-execution-readdy" + str(uuid.uuid4())
-        _time = db_conn_gateway.timestamp()
-
-        # instantiate new return
-        readdy_run = ReaddyRun(
-            job_id=job_id,
-            last_updated=_time,
-            box_size=box_size,
-            status="PENDING",
-            duration=duration,
-            dt=dt,
-            species_config=species_config,
-            reactions_config=reactions_config,
-            particles_config=particles_config,
-            unit_system_config={"length_unit": "micrometer", "time_unit": "second"},
-            reaction_handler="UncontrolledApproximation"
-        )
-
-        # insert job
-        pending_job = await db_conn_gateway.write(
-            collection_name=DEFAULT_JOB_COLLECTION_NAME,
-            box_size=readdy_run.box_size,
-            job_id=readdy_run.job_id,
-            last_updated=readdy_run.last_updated,
-            status=readdy_run.status,
-            duration=readdy_run.duration,
-            dt=readdy_run.dt,
-            species_config=[config.serialize() for config in readdy_run.species_config],
-            reactions_config=[config.serialize() for config in readdy_run.reactions_config],
-            particles_config=[config.serialize() for config in readdy_run.particles_config],
-            unit_system_config=readdy_run.unit_system_config,
-            reaction_handler=readdy_run.reaction_handler
-        )
-
-        return readdy_run
-    except Exception as e:
-        logger.error(str(e))
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 # -- Outputs output data --
 
 @app.get(
@@ -756,6 +609,153 @@ async def run_copasi_step(
     )
 
     return run_data
+
+
+@app.post(
+    "/run-readdy-step",
+    response_model=ReaddyRun,
+    name="Run a readdy simulation",
+    operation_id="run-readdy-step",
+    tags=["Steps"],
+    summary="Run a readdy simulation.")
+async def run_readdy_step(
+        box_size: List[float] = Query(default=[0.3, 0.3, 0.3], description="Box Size of box"),
+        duration: int = Query(default=10, description="Simulation Duration"),
+        dt: float = Query(default=0.0008, description="Interval of step with which simulation runs"),
+        species_config: List[ReaddySpeciesConfig] = Body(
+            ...,
+            description="Species Configuration, specifying species name mapped to diffusion constant",
+            examples=[
+                [
+                    {"name": "E",  "diffusion_constant": 10.0},
+                    {"name": "S",  "diffusion_constant": 10.0},
+                    {"name": "ES", "diffusion_constant": 10.0},
+                    {"name": "P", "diffusion_constant": 10.0}
+                ]
+            ]
+        ),
+        reactions_config: List[ReaddyReactionConfig] = Body(
+            ...,
+            description="Reactions Configuration, specifying reaction scheme mapped to reaction constant.",
+            examples=[
+                [
+                    {"scheme": "fwd: E +(0.03) S -> ES", "rate": 86.78638438},
+                    {"scheme": "back: ES -> E +(0.03) S", "rate": 1.0},
+                    {"scheme": "prod: ES -> E +(0.03) P", "rate": 1.0},
+                ]
+            ]
+        ),
+        particles_config: List[ReaddyParticleConfig] = Body(
+            ...,
+            description="Particles Configuration, specifying initial particle positions for each particle.",
+            examples=[
+                [
+                    {
+                        "name": "E",
+                        "initial_positions": [
+                            [-0.11010841, 0.01048227, -0.07514985],
+                            [0.02715631, -0.03829782, 0.14395517],
+                            [0.05522253, -0.11880506, 0.02222362]
+                        ]
+                    },
+                    {
+                        "name": "S",
+                        "initial_positions": [
+                            [-0.21010841, 0.21048227, -0.07514985],
+                            [0.02715631, -0.03829782, 0.14395517],
+                            [0.05522253, -0.11880506, 0.02222362]
+                        ]
+                    }
+                ]
+            ]
+        ),
+        unit_system_config: Dict[str, str] = Body({"length_unit": "micrometer", "time_unit": "second"}, description="Unit system configuration"),
+        reaction_handler: str = Query(default="UncontrolledApproximation", description="Reaction handler as per Readdy simulation documentation.")
+) -> ReaddyRun:
+    try:
+        # get job params
+        job_id = "simulation-execution-readdy" + str(uuid.uuid4())
+        _time = db_conn_gateway.timestamp()
+
+        # instantiate new return
+        readdy_run = ReaddyRun(
+            job_id=job_id,
+            last_updated=_time,
+            box_size=box_size,
+            status="PENDING",
+            duration=duration,
+            dt=dt,
+            species_config=species_config,
+            reactions_config=reactions_config,
+            particles_config=particles_config,
+            unit_system_config={"length_unit": "micrometer", "time_unit": "second"},
+            reaction_handler="UncontrolledApproximation"
+        )
+
+        # insert job
+        pending_job = await db_conn_gateway.write(
+            collection_name=DEFAULT_JOB_COLLECTION_NAME,
+            box_size=readdy_run.box_size,
+            job_id=readdy_run.job_id,
+            last_updated=readdy_run.last_updated,
+            status=readdy_run.status,
+            duration=readdy_run.duration,
+            dt=readdy_run.dt,
+            species_config=[config.serialize() for config in readdy_run.species_config],
+            reactions_config=[config.serialize() for config in readdy_run.reactions_config],
+            particles_config=[config.serialize() for config in readdy_run.particles_config],
+            unit_system_config=readdy_run.unit_system_config,
+            reaction_handler=readdy_run.reaction_handler
+        )
+
+        return readdy_run
+    except Exception as e:
+        logger.error(str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post(
+    "/run-smoldyn-step",
+    response_model=SmoldynRun,
+    name="Run a smoldyn simulation",
+    operation_id="run-smoldyn-step",
+    tags=["Steps"],
+    summary="Run a smoldyn simulation.")
+async def run_smoldyn_step(
+        uploaded_file: UploadFile = File(..., description="Smoldyn Configuration File"),
+        duration: int = Query(default=None, description="Simulation Duration"),
+        dt: float = Query(default=None, description="Interval of step with which simulation runs"),
+        # initial_molecule_state: List = Body(default=None, description="Mapping of species names to initial molecule conditions including counts and location.")
+) -> SmoldynRun:
+    try:
+        # get job params
+        job_id = "simulation-execution-smoldyn" + str(uuid.uuid4())
+        _time = db_conn_gateway.timestamp()
+        uploaded_file_location = await write_uploaded_file(job_id=job_id, uploaded_file=uploaded_file, bucket_name=DEFAULT_BUCKET_NAME, extension='.txt')
+        # instantiate new return
+        smoldyn_run = SmoldynRun(
+            job_id=job_id,
+            last_updated=_time,
+            status="PENDING",
+            path=uploaded_file_location,
+            duration=duration,
+            dt=dt
+        )
+        # insert job
+        pending_job = await db_conn_gateway.write(
+            collection_name="smoldyn_jobs",
+            job_id=smoldyn_run.job_id,
+            last_updated=smoldyn_run.last_updated,
+            status=smoldyn_run.status,
+            path=smoldyn_run.path,
+            duration=smoldyn_run.duration,
+            dt=smoldyn_run.dt
+        )
+
+        return smoldyn_run
+    except Exception as e:
+        logger.error(str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post(
