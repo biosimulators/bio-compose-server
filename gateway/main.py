@@ -136,9 +136,6 @@ async def get_process_bigraph_addresses() -> BigraphRegistryAddresses:
 async def validate_composition(
         spec_file: UploadFile = File(..., description="Composition JSON File"),
 ) -> ValidatedComposition:
-    from process_bigraph import Composite
-    from bsp import app_registrar
-
     # validate filetype
     if not spec_file.filename.endswith('.json') and spec_file.content_type != 'application/json':
         raise HTTPException(status_code=400, detail="Invalid file type. Only JSON files are supported.")
