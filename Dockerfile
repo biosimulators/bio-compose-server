@@ -7,10 +7,9 @@ LABEL org.opencontainers.image.title="bio-compose-server-base" \
     org.opencontainers.image.authors="Alexander Patrie <apatrie@uchc.edu>, BioSimulators Team <info@biosimulators.org>" \
     org.opencontainers.image.vendor="BioSimulators Team"
 
-ENV DEBIAN_FRONTEND=noninteractive
+SHELL ["/usr/bin/env", "bash", "-c"]
 
-# expose for gateway
-# EXPOSE 3001
+ENV DEBIAN_FRONTEND=noninteractive
 
 # copy assets
 COPY assets/docker/config/.biosimulations.json /.google/.bio-compose.json
@@ -28,46 +27,57 @@ COPY ./worker /bio-compose-server/worker
 # copy env configs
 COPY ./environment.yml /bio-compose-server/environment.yml
 COPY ./pyproject.toml /bio-compose-server/pyproject.toml
-RUN echo "Server" > /bio-compose-server/README.md
+COPY ./shared/scripts/entrypoint.sh /entrypoint.sh
 
-RUN mkdir config \
-    && apt-get update \
-    && apt-get install -y \
-        meson \
-        g++ \
-        gfortran \
-        libblas-dev \
-        liblapack-dev \
-        libgfortran5 \
-        libhdf5-dev \
-        libhdf5-serial-dev \
-        libatlas-base-dev \
-        cmake \
-        make \
-        git \
-        build-essential \
-        python3-dev \
-        swig \
-        libc6-dev \
-        libx11-dev \
-        libc6 \
-        libgl1-mesa-dev \
-        pkg-config \
-        curl \
-        tar \
-        libgl1-mesa-glx \
-        libice6 \
-        libsm6 \
-        gnupg \
-        libstdc++6
+RUN echo "Server" > /bio-compose-server/README.md \
+    && mkdir config \
+    && chmod +x /entrypoint.sh
 
 RUN conda update -n base -c conda-forge conda \
     && conda env create -f /bio-compose-server/environment.yml -y \
     && conda run -n server pip install --upgrade pip \
     && echo "conda activate server" >> /.bashrc \
     && conda run -n server poetry config virtualenvs.create false \
-    && conda run -n server poetry lock \
-    && conda run -n server poetry install
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+
+# RUN apt-get update \
+#     && apt-get install -y \
+#         meson \
+#         g++ \
+#         gfortran \
+#         libblas-dev \
+#         liblapack-dev \
+#         libgfortran5 \
+#         libhdf5-dev \
+#         libhdf5-serial-dev \
+#         libatlas-base-dev \
+#         cmake \
+#         make \
+#         git \
+#         build-essential \
+#         python3-dev \
+#         swig \
+#         libc6-dev \
+#         libx11-dev \
+#         libc6 \
+#         libgl1-mesa-dev \
+#         pkg-config \
+#         curl \
+#         tar \
+#         libgl1-mesa-glx \
+#         libice6 \
+#         libsm6 \
+#         gnupg \
+#         libstdc++6
+# RUN conda update -n base -c conda-forge conda \
+#     && conda env create -f /bio-compose-server/environment.yml -y \
+#     && conda run -n server pip install --upgrade pip \
+#     && echo "conda activate server" >> /.bashrc \
+#     && conda run -n server poetry config virtualenvs.create false \
+#     && conda run -n server poetry lock \
+#     && conda run -n server poetry install
 
 # && conda config --env --add channels conda-forge \
 # && conda config --set channel_priority strict \
@@ -76,8 +86,5 @@ RUN conda update -n base -c conda-forge conda \
 # && conda install -c conda-forge pymem3dg -y \
 # && echo 'export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:\$LD_LIBRARY_PATH' >> ~/.bashrc
 
-COPY ./shared/scripts/entrypoint.sh /entrypoint.sh
 
-RUN chmod +x /entrypoint.sh
 
-ENTRYPOINT ["/entrypoint.sh"]
