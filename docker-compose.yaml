@@ -10,9 +10,9 @@ services:
   gateway:
     platform: linux/amd64
     # uncomment below to build from source
-    build:
-      context: .
-      dockerfile: ./gateway/Dockerfile-gateway
+    # build:
+    #   context: .
+    #   dockerfile: ./gateway/Dockerfile-gateway
     image: ghcr.io/biosimulators/bio-compose-server-gateway:0.0.10-dev
     # STABLE is 0.0.5-dev
     container_name: gateway
@@ -24,9 +24,9 @@ services:
   worker:
     platform: linux/amd64
     # uncomment below to build from source
-    build:
-      context: .
-      dockerfile: ./worker/Dockerfile-worker
+    # build:
+    #   context: .
+    #   dockerfile: ./worker/Dockerfile-worker
     image: ghcr.io/biosimulators/bio-compose-server-worker:0.0.10-dev
     # STABLE is 0.0.2-dev
     container_name: worker
