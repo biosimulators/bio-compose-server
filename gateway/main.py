@@ -246,6 +246,85 @@ async def get_composition_state(job_id: str):
         raise HTTPException(status_code=500, detail=f"No specification found for job with id: {job_id}.")
 
 
+# -- Data: output data --
+
+@app.get(
+    "/get-output/{job_id}",
+    response_model=OutputData,
+    operation_id='get-output',
+    tags=["Data"],
+    summary='Get the results of an existing simulation run.')
+async def get_output(job_id: str):
+    # get the job
+    job = await db_conn_gateway.read(collection_name=DEFAULT_JOB_COLLECTION_NAME, job_id=job_id)
+
+    # parse id and return if job exist
+    if job is not None:
+        not_included = ["_id", "spec", "duration", "simulators"]
+        data = {}
+        for key in job.keys():
+            if key not in not_included:
+                data[key] = job[key]
+
+        return OutputData(**data)
+    else:
+        # otherwise, job does not exists
+        msg = f"Job with id: {job_id} not found. Please check the job_id and try again."
+        logger.error(msg)
+        raise HTTPException(status_code=404, detail=msg)
+
+
+@app.get(
+    "/get-output-file/{job_id}",
+    operation_id='get-output-file',
+    tags=["Data"],
+    summary='Get the results of an existing simulation run from Smoldyn or Readdy as either a downloadable file or job progression status.'
+)
+async def get_output_file(job_id: str):
+    # state-case: job is completed
+    if not job_id.startswith("simulation-execution"):
+        raise HTTPException(status_code=404, detail="This must be an output file job query starting with 'simulation-execution'.")
+    job = await db_conn_gateway.read(collection_name="completed_jobs", job_id=job_id)
+    if job is not None:
+        # rm mongo index
+        job.pop('_id', None)
+        # parse filepath in bucket and create file response
+        job_data = job
+        if isinstance(job_data, dict):
+            remote_fp = job_data.get("results").get("results_file")
+            if remote_fp is not None:
+                temp_dest = mkdtemp()
+                local_fp = download_file_from_bucket(source_blob_path=remote_fp, out_dir=temp_dest, bucket_name=DEFAULT_BUCKET_NAME)
+                # return downloadable file blob
+                return FileResponse(path=local_fp, media_type="application/octet-stream", filename=local_fp.split("/")[-1])  # TODO: return special smoldyn file instance
+    # state-case: job has failed
+    if job is None:
+        job = await db_conn_gateway.read(collection_name="failed_jobs", job_id=job_id)
+    # state-case: job is not in completed:
+    if job is None:
+        job = await db_conn_gateway.read(collection_name="in_progress_jobs", job_id=job_id)
+    # state-case: job is not in progress:
+    if job is None:
+        job = await db_conn_gateway.read(collection_name="pending_jobs", job_id=job_id)
+    # case: job is either failed, in prog, or pending
+    if job is not None:
+        # rm mongo index
+        job.pop('_id', None)
+        # specify source safely
+        src = job.get('source', job.get('path'))
+        if src is not None:
+            source = src.split('/')[-1]
+        else:
+            source = None
+
+        return IncompleteFileJob(
+            job_id=job_id,
+            timestamp=job.get('timestamp'),
+            status=job.get('status'),
+            source=source
+        )
+
+
 # -- Files: submit file IO jobs --
 
 @app.post(
@@ -425,85 +504,6 @@ async def run_tellurium_process(
     )
 
     return run_data
-
-
-# -- Outputs output data --
-
-@app.get(
-    "/get-output/{job_id}",
-    response_model=OutputData,
-    operation_id='get-output',
-    tags=["Results"],
-    summary='Get the results of an existing simulation run.')
-async def get_output(job_id: str):
-    # get the job
-    job = await db_conn_gateway.read(collection_name=DEFAULT_JOB_COLLECTION_NAME, job_id=job_id)
-
-    # parse id and return if job exist
-    if job is not None:
-        not_included = ["_id", "spec", "duration", "simulators"]
-        data = {}
-        for key in job.keys():
-            if key not in not_included:
-                data[key] = job[key]
-
-        return OutputData(**data)
-    else:
-        # otherwise, job does not exists
-        msg = f"Job with id: {job_id} not found. Please check the job_id and try again."
-        logger.error(msg)
-        raise HTTPException(status_code=404, detail=msg)
-
-
-@app.get(
-    "/get-output-file/{job_id}",
-    operation_id='get-output-file',
-    tags=["Results"],
-    summary='Get the results of an existing simulation run from Smoldyn or Readdy as either a downloadable file or job progression status.'
-)
-async def get_output_file(job_id: str):
-    # state-case: job is completed
-    if not job_id.startswith("simulation-execution"):
-        raise HTTPException(status_code=404, detail="This must be an output file job query starting with 'simulation-execution'.")
-    job = await db_conn_gateway.read(collection_name="completed_jobs", job_id=job_id)
-    if job is not None:
-        # rm mongo index
-        job.pop('_id', None)
-        # parse filepath in bucket and create file response
-        job_data = job
-        if isinstance(job_data, dict):
-            remote_fp = job_data.get("results").get("results_file")
-            if remote_fp is not None:
-                temp_dest = mkdtemp()
-                local_fp = download_file_from_bucket(source_blob_path=remote_fp, out_dir=temp_dest, bucket_name=DEFAULT_BUCKET_NAME)
-                # return downloadable file blob
-                return FileResponse(path=local_fp, media_type="application/octet-stream", filename=local_fp.split("/")[-1])  # TODO: return special smoldyn file instance
-    # state-case: job has failed
-    if job is None:
-        job = await db_conn_gateway.read(collection_name="failed_jobs", job_id=job_id)
-    # state-case: job is not in completed:
-    if job is None:
-        job = await db_conn_gateway.read(collection_name="in_progress_jobs", job_id=job_id)
-    # state-case: job is not in progress:
-    if job is None:
-        job = await db_conn_gateway.read(collection_name="pending_jobs", job_id=job_id)
-    # case: job is either failed, in prog, or pending
-    if job is not None:
-        # rm mongo index
-        job.pop('_id', None)
-        # specify source safely
-        src = job.get('source', job.get('path'))
-        if src is not None:
-            source = src.split('/')[-1]
-        else:
-            source = None
-
-        return IncompleteFileJob(
-            job_id=job_id,
-            timestamp=job.get('timestamp'),
-            status=job.get('status'),
-            source=source
-        )
 
 
 # -- Steps: submit single simulator jobs --

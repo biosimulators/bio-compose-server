@@ -100,6 +100,58 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /get-output/{job_id}:
+    get:
+      tags:
+      - Data
+      summary: Get the results of an existing simulation run.
+      operationId: get-output
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Job Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutputData'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /get-output-file/{job_id}:
+    get:
+      tags:
+      - Data
+      summary: Get the results of an existing simulation run from Smoldyn or Readdy
+        as either a downloadable file or job progression status.
+      operationId: get-output-file
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Job Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /generate-simularium-file:
     post:
       tags:
@@ -373,58 +425,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TelluriumRun'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /get-output/{job_id}:
-    get:
-      tags:
-      - Results
-      summary: Get the results of an existing simulation run.
-      operationId: get-output
-      parameters:
-      - name: job_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Job Id
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OutputData'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-  /get-output-file/{job_id}:
-    get:
-      tags:
-      - Results
-      summary: Get the results of an existing simulation run from Smoldyn or Readdy
-        as either a downloadable file or job progression status.
-      operationId: get-output-file
-      parameters:
-      - name: job_id
-        in: path
-        required: true
-        schema:
-          type: string
-          title: Job Id
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema: {}
         '422':
           description: Validation Error
           content:
