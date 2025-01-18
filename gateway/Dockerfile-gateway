@@ -10,6 +10,10 @@ LABEL org.opencontainers.image.title="bio-compose-server-gateway" \
 
 SHELL ["/usr/bin/env", "bash", "-c"]
 
+COPY ./gateway /bio-compose-server/gateway
+COPY ./shared /bio-compose-server/shared
+COPY ./worker /bio-compose-server/worker
+
 # RUN conda run -n server poetry config virtualenvs.create false \
 #     && conda run -n server poetry lock \
 #     && conda run -n server poetry install

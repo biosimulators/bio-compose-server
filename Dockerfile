@@ -20,9 +20,9 @@ COPY tests/test_fixtures /test_fixtures
 WORKDIR /bio-compose-server
 
 # copy container libs
-COPY ./gateway /bio-compose-server/gateway
-COPY ./shared /bio-compose-server/shared
-COPY ./worker /bio-compose-server/worker
+# COPY ./gateway /bio-compose-server/gateway
+# COPY ./shared /bio-compose-server/shared
+# COPY ./worker /bio-compose-server/worker
 
 # copy env configs
 COPY ./environment.yml /bio-compose-server/environment.yml
@@ -36,8 +36,7 @@ RUN echo "Server" > /bio-compose-server/README.md \
 RUN conda update -n base -c conda-forge conda \
     && conda env create -f /bio-compose-server/environment.yml -y \
     && conda run -n server pip install --upgrade pip \
-    && echo "conda activate server" >> /.bashrc \
-    && conda run -n server poetry config virtualenvs.create false
+    && echo "conda activate server" >> /.bashrc
 
 ENTRYPOINT ["/entrypoint.sh"]
 
