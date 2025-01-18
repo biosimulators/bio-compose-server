@@ -1,5 +1,5 @@
 FROM ghcr.io/biosimulators/bio-compose-server-base:latest
-# STABLE IS 0.0.2-dev
+# STABLE IS 0.0.2-dev and 0.0.3-dev
 
 LABEL org.opencontainers.image.title="bio-compose-server-worker" \
     org.opencontainers.image.description="Base Docker image for BioCompose REST API management, job processing, and datastorage with MongoDB, ensuring scalable and robust performance." \
