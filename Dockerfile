@@ -29,7 +29,7 @@ COPY ./environment.yml /app/environment.yml
 COPY ./pyproject.toml /app/pyproject.toml
 COPY ./shared/scripts/entrypoint.sh /entrypoint.sh
 
-RUN echo "Server" > appr/README.md \
+RUN echo "Server" > app/README.md \
     && mkdir config \
     && chmod +x /entrypoint.sh
 
