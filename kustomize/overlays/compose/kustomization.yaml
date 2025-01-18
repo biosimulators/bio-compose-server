@@ -8,7 +8,7 @@ images:
 - name: mongo
   newTag: 8.0-rc
 - name: ghcr.io/biosimulators/bio-compose-server-gateway
-  newTag: 0.0.5-dev  # STABLE is 0.0.5-dev 0.0.8-dev
+  newTag: 0.0.10-dev  # STABLE is 0.0.5-dev 0.0.8-dev
 - name: ghcr.io/biosimulators/bio-compose-server-worker
   newTag: 0.0.2-dev  # STABLE is 0.0.2-dev  # 0.0.6-dev
 
