@@ -75,3 +75,4 @@ jobs:
           LATEST_IMG="${{ vars.IMG_ROOT }}-worker:latest"
           docker tag $WORKER_IMG $LATEST_IMG
           docker push $LATEST_IMG
+          
