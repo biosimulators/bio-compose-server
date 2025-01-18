@@ -53,13 +53,11 @@ class CompositionDispatcher(object):
 
     async def run(self):
         # iterate over all jobs
-        print('checking jobs...')
         i = 0
         while i < 5:
             for job in self.current_jobs:
                 await self.dispatch(job)
             i += 1
-            print('sleeping')
             await asyncio.sleep(1)
 
     @staticmethod
@@ -77,7 +75,6 @@ class CompositionDispatcher(object):
         if job_status.lower() == "pending":
             # 3. install simulators required
             # await self.install_simulators(job)
-            print("Creating env")
             create_dynamic_environment(job)
 
             # 4. change job status to IN_PROGRESS
