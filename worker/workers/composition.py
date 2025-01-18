@@ -17,12 +17,12 @@ The general workflow should be:
 10. worker: update job document ['results'] field with #8's data
 11. worker: perhaps emit an event?
 """
+
+
 import asyncio
 import json
 import subprocess
 import tempfile
-
-import dotenv
 import os
 from typing import Any, Mapping, List
 
@@ -31,84 +31,50 @@ from process_bigraph import Composite
 from shared.database import MongoConnector
 from shared.dynamic_env import install_request_dependencies, create_dynamic_environment
 from shared.log_config import setup_logging
-from shared.environment import DEFAULT_DB_NAME, DEFAULT_DB_TYPE, DEFAULT_JOB_COLLECTION_NAME, PROJECT_ROOT_PATH
-from worker.dispatch.runs_dispatch import RunsDispatcher
+
 
 logger = setup_logging(__file__)
 
 
-class CompositionDispatcher(object):
-    def __init__(self,
-                 db_connector: MongoConnector,
-                 timeout: int = 5):
-        """
-        :param db_connector: (`shared.database.MongoConnector`) database connector singleton instantiated with mongo uri.
-        :param timeout: number of minutes for timeout. Default is 5 minutes
-        """
-        self.db_connector = db_connector
-        self.timeout = timeout * 60
-
-    @property
-    def current_jobs(self) -> List[Mapping[str, Any]]:
-        return self.db_connector.get_jobs()
-
-    async def run(self):
-        # iterate over all jobs
-        i = 0
-        while i < 5:
-            for job in self.current_jobs:
-                job_id = job['job_id']
-                if job_id.startswith("run"):
-                    result = await RunsDispatcher().run(job)
-                    await self.db_connector.update_job(job_id=job_id, status="COMPLETE", results=result)
-                await self.dispatch(job)
-            i += 1
-            await asyncio.sleep(1)
-
+class CompositionWorker(object):
     @staticmethod
-    def generate_failed_job(job_id: str, msg: str):
-        return {"job_id": job_id, "status": "FAILED", "result": msg}
-
-    async def install_simulators(self, job: Mapping[str, Any]):
+    async def install_simulators(job: Mapping[str, Any]):
         simulators = job["simulators"]
         job_id = job["job_id"]
         return install_request_dependencies(job_id=job_id, simulators=simulators)
 
-    async def dispatch(self, job: Mapping[str, Any]):
+    async def dispatch(self, job: Mapping[str, Any], db_connector: MongoConnector):
         # TODO: add try blocks for each section
         job_status = job["status"]
         if job_status.lower() == "pending":
             # 3. install simulators required
+            # create_dynamic_environment(job)
             # await self.install_simulators(job)
-            create_dynamic_environment(job)
 
             # 4. change job status to IN_PROGRESS
             job_id = job["job_id"]
-            await self.db_connector.update_job(job_id=job_id, status="IN_PROGRESS")
-
-            job_str = json.dumps(job)
-            conn_uri = self.db_connector.connection_uri
-            local_conn = int(self.db_connector.local)
-
-            # subprocess.check_call(
-            #     ["conda", "run", "-n", job_id, "python", f"{PROJECT_ROOT_PATH}/worker/execute.py", job_str, job_id, conn_uri, local_conn]
-            # )
+            await db_connector.update_job(job_id=job_id, status="IN_PROGRESS")
 
             # # 5. from bsp import app_registrar.core
             bsp = __import__("bsp")
             core = bsp.app_registrar.core
+
             # 6. create Composite() with core and job["job_spec"]
             composition = Composite(
                 config={"state": job["spec"]},
                 core=core
             )
+
             # 7. run composition with instance from #6 for specified duration (default 1)
             dur = job.get("duration", 1)
             composition.run(dur)
+
             # 8. get composition results indexed from ram-emitter
             results = composition.gather_results()[("emitter",)]
+
             # 9. update job in DB ['results'] to Composite().gather_results() AND change status to COMPLETE
-            await self.db_connector.update_job(job_id=job_id, status="COMPLETE", results=results)
+            await db_connector.update_job(job_id=job_id, status="COMPLETE", results=results)
+
             # 10. add new result state in db within result_states collection!
             temp_dir = tempfile.mkdtemp()
             temp_fname = f"{job}.state.json"
@@ -116,19 +82,16 @@ class CompositionDispatcher(object):
             temp_path = os.path.join(temp_dir, temp_fname)
             with open(temp_path, 'r') as f:
                 current_data = json.load(f)
-            await self.db_connector.write(
+            await db_connector.write(
                 collection_name="result_states",
                 job_id=job_id,
                 data=current_data,
-                last_updated=self.db_connector.timestamp()
+                last_updated=db_connector.timestamp()
             )
+
             # 11. remove composite state file artifact
             os.remove(temp_path) if os.path.exists(temp_path) else None
 
-
-def test_dispatcher():
-    from shared.data_model import CompositionRun
-    import asyncio
 
 
 

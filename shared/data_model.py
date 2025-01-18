@@ -226,6 +226,11 @@ class ValidatedComposition(BaseClass):
     invalid_nodes: Dict[str, str]
 
 
+@dataclass
+class OutputFile(BaseClass):
+    results_file: str
+
+
 # -- misc --
 
 @dataclass
