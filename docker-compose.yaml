@@ -27,7 +27,7 @@ services:
     # build:
     #   context: .
     #   dockerfile: ./worker/Dockerfile-worker
-    image: ghcr.io/biosimulators/bio-compose-server-worker:0.1.0-dev  # 0.0.12-dev
+    image: ghcr.io/biosimulators/bio-compose-server-worker:0.1.1-dev  # 0.0.12-dev
     # STABLE is 0.0.2-dev
     container_name: worker
     networks:
