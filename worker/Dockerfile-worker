@@ -54,7 +54,8 @@ RUN conda run -n server bash -c "\
     poetry config virtualenvs.create false && \
     poetry lock && \
     poetry install" \
-    && conda install -n server conda-forge::pymem3dg -y
+    && conda install -n server conda-forge::pymem3dg -y \
+    && conda install -n server conda-forge::readdy -y
 
 ENTRYPOINT ["/entrypoint.sh"]
 

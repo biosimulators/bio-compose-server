@@ -31,7 +31,8 @@ from process_bigraph import Composite
 from shared.database import MongoConnector
 from shared.dynamic_env import install_request_dependencies, create_dynamic_environment
 from shared.log_config import setup_logging
-from shared.environment import DEFAULT_LOCAL_MONGO_URI, DEFAULT_DB_NAME, DEFAULT_DB_TYPE, DEFAULT_JOB_COLLECTION_NAME, PROJECT_ROOT_PATH
+from shared.environment import DEFAULT_DB_NAME, DEFAULT_DB_TYPE, DEFAULT_JOB_COLLECTION_NAME, PROJECT_ROOT_PATH
+from worker.dispatch.runs_dispatch import RunsDispatcher
 
 logger = setup_logging(__file__)
 
@@ -56,6 +57,10 @@ class CompositionDispatcher(object):
         i = 0
         while i < 5:
             for job in self.current_jobs:
+                job_id = job['job_id']
+                if job_id.startswith("run"):
+                    result = await RunsDispatcher().run(job)
+                    await self.db_connector.update_job(job_id=job_id, status="COMPLETE", results=result)
                 await self.dispatch(job)
             i += 1
             await asyncio.sleep(1)
@@ -85,39 +90,40 @@ class CompositionDispatcher(object):
             conn_uri = self.db_connector.connection_uri
             local_conn = int(self.db_connector.local)
 
-            subprocess.check_call(
-                ["conda", "run", "-n", job_id, "python", f"{PROJECT_ROOT_PATH}/worker/execute.py", job_str, job_id, conn_uri, local_conn]
-            )
+            # subprocess.check_call(
+            #     ["conda", "run", "-n", job_id, "python", f"{PROJECT_ROOT_PATH}/worker/execute.py", job_str, job_id, conn_uri, local_conn]
+            # )
+
             # # 5. from bsp import app_registrar.core
-            # bsp = __import__("bsp")
-            # core = bsp.app_registrar.core
-            # # 6. create Composite() with core and job["job_spec"]
-            # composition = Composite(
-            #     config={"state": job["spec"]},
-            #     core=core
-            # )
-            # # 7. run composition with instance from #6 for specified duration (default 1)
-            # dur = job.get("duration", 1)
-            # composition.run(dur)
-            # # 8. get composition results indexed from ram-emitter
-            # results = composition.gather_results()[("emitter",)]
-            # # 9. update job in DB ['results'] to Composite().gather_results() AND change status to COMPLETE
-            # await self.db_connector.update_job(job_id=job_id, status="COMPLETE", results=results)
-            # # 10. add new result state in db within result_states collection!
-            # temp_dir = tempfile.mkdtemp()
-            # temp_fname = f"{job}.state.json"
-            # composition.save(filename=temp_fname, outdir=temp_dir)
-            # temp_path = os.path.join(temp_dir, temp_fname)
-            # with open(temp_path, 'r') as f:
-            #     current_data = json.load(f)
-            # await self.db_connector.write(
-            #     collection_name="result_states",
-            #     job_id=job_id,
-            #     data=current_data,
-            #     last_updated=self.db_connector.timestamp()
-            # )
-            # # 11. remove composite state file artifact
-            # os.remove(temp_path) if os.path.exists(temp_path) else None
+            bsp = __import__("bsp")
+            core = bsp.app_registrar.core
+            # 6. create Composite() with core and job["job_spec"]
+            composition = Composite(
+                config={"state": job["spec"]},
+                core=core
+            )
+            # 7. run composition with instance from #6 for specified duration (default 1)
+            dur = job.get("duration", 1)
+            composition.run(dur)
+            # 8. get composition results indexed from ram-emitter
+            results = composition.gather_results()[("emitter",)]
+            # 9. update job in DB ['results'] to Composite().gather_results() AND change status to COMPLETE
+            await self.db_connector.update_job(job_id=job_id, status="COMPLETE", results=results)
+            # 10. add new result state in db within result_states collection!
+            temp_dir = tempfile.mkdtemp()
+            temp_fname = f"{job}.state.json"
+            composition.save(filename=temp_fname, outdir=temp_dir)
+            temp_path = os.path.join(temp_dir, temp_fname)
+            with open(temp_path, 'r') as f:
+                current_data = json.load(f)
+            await self.db_connector.write(
+                collection_name="result_states",
+                job_id=job_id,
+                data=current_data,
+                last_updated=self.db_connector.timestamp()
+            )
+            # 11. remove composite state file artifact
+            os.remove(temp_path) if os.path.exists(temp_path) else None
 
 
 def test_dispatcher():
