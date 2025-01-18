@@ -10,9 +10,9 @@ LABEL org.opencontainers.image.title="bio-compose-server-worker" \
 
 SHELL ["/usr/bin/env", "bash", "-c"]
 
-COPY ./gateway /bio-compose-server/gateway
-COPY ./shared /bio-compose-server/shared
-COPY ./worker /bio-compose-server/worker
+COPY ./gateway /app/gateway
+COPY ./shared /app/shared
+COPY ./worker /app/worker
 
 RUN apt-get update \
     && apt-get install -y \
@@ -49,9 +49,10 @@ RUN conda run -n server poetry config virtualenvs.create false \
     && conda run -n server poetry lock \
     && conda run -n server poetry install \
     && conda install -n server conda-forge::pymem3dg -y \
-    && conda install -n server conda-forge::readdy -y
+    && conda install -n server conda-forge::readdy -y \
+    && conda run -n server pip install biosimulator-processes[amici,cobra,copasi,smoldyn,tellurium]
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
 
-CMD ["python3", "worker/main.py"]
+CMD ["python3", "/app/worker/main.py"]
 

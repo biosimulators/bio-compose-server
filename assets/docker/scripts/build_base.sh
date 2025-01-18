@@ -7,10 +7,11 @@ set -e
 
 version="$1"
 push="$2"
+version_passed=1
 
 if [ "$version" == "" ]; then
-  echo "you must pass a version for deploy."
-  exit 1
+  version=$(cat ./assets/docker/.BASE_VERSION)
+  version_passed=0
 fi
 
 # version=$(cat ./assets/docker/.BASE_VERSION)

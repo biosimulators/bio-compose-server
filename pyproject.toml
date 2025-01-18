@@ -22,7 +22,7 @@ h5py = "*"
 python-dotenv = "*"
 python-libsbml = "*"
 pymongo = "*"
-biosimulator-processes = {version = "^0.3.11", extras = ["amici,copasi,cobra,smoldyn,tellurium"]}
+# biosimulator-processes = {version = "^0.3.11", extras = ["amici,copasi,cobra,smoldyn,tellurium"]}
 
 
 [build-system]

@@ -3,9 +3,20 @@
 
 # Run at root of repo!
 
+set -e
+
 lib="$1"
 version="$2"
 push="$3"
+
+if [ "$lib" == "" ]; then
+  echo "No service specified."
+  exit 1
+fi
+
+if [ "$version" == "" ]; then
+  version=$(python3 .github/parse_container_version.py "$lib")
+fi
 
 if [ "$push" == "--push" ]; then
   echo "Push enabled!"
