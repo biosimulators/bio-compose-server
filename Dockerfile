@@ -7,7 +7,7 @@ LABEL org.opencontainers.image.title="bio-compose-server-base" \
     org.opencontainers.image.authors="Alexander Patrie <apatrie@uchc.edu>, BioSimulators Team <info@biosimulators.org>" \
     org.opencontainers.image.vendor="BioSimulators Team"
 
-SHELL ["/usr/bin/env", "bash", "-c"]
+# SHELL ["/usr/bin/env", "bash", "-c"]
 
 ENV DEBIAN_FRONTEND=noninteractive
 
