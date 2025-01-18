@@ -222,14 +222,22 @@ class SmoldynOutput(FileResponse):
 
 @dataclass
 class ValidatedComposition(BaseClass):
-    state: Dict[str, Any]
     valid: bool
+    invalid_nodes: Dict[str, str]
 
 
 # -- misc --
 
 @dataclass
-class IncompleteJob(BaseClass):
+class HealthCheckResponse(BaseClass):
+    version: str
+    status: str
+    message: str = field(default="Welcome to the BioCompose API")
+    swagger_ui: str = field(default="https://compose.biosimulations.org/docs")
+
+
+@dataclass
+class IncompleteFileJob(BaseClass):
     job_id: str
     timestamp: float
     status: str
@@ -242,6 +250,21 @@ class JobStatuses:
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
+
+APP_SERVERS = [
+    # {
+    #     "url": "https://compose.biosimulations.org",
+    #     "description": "Production server"
+    # },
+    # {
+    #     "url": "http://localhost:3001",
+    #     "description": "Main Development server"
+    # },
+    # {
+    #     "url": "http://localhost:8000",
+    #     "description": "Alternate Development server"
+    # }
+]
 
 
 

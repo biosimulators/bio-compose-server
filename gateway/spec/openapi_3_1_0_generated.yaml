@@ -3,18 +3,6 @@ info:
   title: bio-compose-server
   version: 0.0.1
 paths:
-  /:
-    get:
-      tags:
-      - Health
-      summary: Health check
-      operationId: root__get
-      responses:
-        '200':
-          description: Successful Response
-          content:
-            application/json:
-              schema: {}
   /get-process-bigraph-addresses:
     get:
       tags:
@@ -34,23 +22,12 @@ paths:
       - Composition
       summary: Validate Simulation Experiment Design specification file.
       operationId: validate-composition
-      parameters:
-      - name: simulators
-        in: query
-        required: true
-        schema:
-          type: array
-          items:
-            type: string
-          description: Simulator package names to use for implementation
-          title: Simulators
-        description: Simulator package names to use for implementation
       requestBody:
-        required: true
         content:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/Body_validate-composition'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -128,7 +105,7 @@ paths:
       tags:
       - Files
       summary: Generate a simularium file with a compatible simulation results file
-        from either Smoldyn, SpringSaLaD, or ReaDDy.
+        from Smoldyn
       operationId: generate-simularium-file
       parameters:
       - name: box_size
@@ -189,6 +166,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /:
+    get:
+      tags:
+      - Health
+      summary: Health check
+      operationId: check_health__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
   /run-amici-process:
     post:
       tags:
@@ -1150,6 +1140,27 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    HealthCheckResponse:
+      properties:
+        version:
+          type: string
+          title: Version
+        status:
+          type: string
+          title: Status
+        message:
+          type: string
+          title: Message
+          default: Welcome to the BioCompose API
+        swagger_ui:
+          type: string
+          title: Swagger Ui
+          default: https://compose.biosimulations.org/docs
+      type: object
+      required:
+      - version
+      - status
+      title: HealthCheckResponse
     OutputData:
       properties:
         job_id:
@@ -1396,16 +1407,18 @@ components:
       title: TelluriumRun
     ValidatedComposition:
       properties:
-        state:
-          type: object
-          title: State
         valid:
           type: boolean
           title: Valid
+        invalid_nodes:
+          additionalProperties:
+            type: string
+          type: object
+          title: Invalid Nodes
       type: object
       required:
-      - state
       - valid
+      - invalid_nodes
       title: ValidatedComposition
     ValidationError:
       properties:

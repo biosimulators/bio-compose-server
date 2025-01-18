@@ -20,12 +20,11 @@ from pydantic import BeforeValidator
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
-from gateway.handlers.submit import submit_utc_run
+from gateway.handlers.submit import submit_utc_run, check_composition
 
 from gateway.handlers.health import check_client
 from shared.data_model import (
     BigraphRegistryAddresses,
-    DbClientResponse,
     CompositionNode,
     CompositionSpec,
     CompositionRun,
@@ -40,7 +39,10 @@ from shared.data_model import (
     AmiciRun,
     CobraRun,
     CopasiRun,
-    TelluriumRun, IncompleteJob
+    TelluriumRun,
+    IncompleteFileJob,
+    APP_SERVERS,
+    HealthCheckResponse
 )
 from shared.database import MongoConnector
 from shared.io import write_uploaded_file, download_file_from_bucket
@@ -53,14 +55,11 @@ from shared.environment import (
     DEFAULT_JOB_COLLECTION_NAME,
     DEFAULT_BUCKET_NAME
 )
-# from shared.io import write_uploaded_file, download_file_from_bucket
 
-
-# TODO: add model file parsing to JSON composite docs (bucket location)
 
 logger = setup_logging(__file__)
 
-# -- load dev env -- #
+# load dev env (local)...see note below
 dotenv.load_dotenv(ENV_PATH)  # NOTE: create an env config at this filepath if dev
 
 APP_VERSION = get_project_version()
@@ -88,20 +87,6 @@ APP_ORIGINS = [
     'https://bio.libretexts.org',
     'https://compose.biosimulations.org'
 ]
-APP_SERVERS = [
-    # {
-    #     "url": "https://compose.biosimulations.org",
-    #     "description": "Production server"
-    # },
-    # {
-    #     "url": "http://localhost:3001",
-    #     "description": "Main Development server"
-    # },
-    # {
-    #     "url": "http://localhost:8000",
-    #     "description": "Alternate Development server"
-    # }
-]
 
 # -- app components -- #
 
@@ -122,21 +107,6 @@ app.mongo_client = db_conn_gateway.client
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
 
-@app.get(
-    "/",
-    tags=["Health"],
-    summary="Health check",
-)
-def root():
-    response = check_client(db_conn_gateway)
-    return {
-        "message": "Welcome to the BioCompose API",
-        "swagger_ui": "https://compose.biosimulations.org/docs",
-        "version": APP_VERSION,
-        "status": "running" if response.status == "PASS" else response
-    }
-
-
 # -- Composition: submit composition jobs --
 
 @app.get(
@@ -150,6 +120,7 @@ async def get_process_bigraph_addresses() -> BigraphRegistryAddresses:
     from bsp import app_registrar
     addresses = app_registrar.registered_addresses
     version = "latest"
+
     return BigraphRegistryAddresses(registered_addresses=addresses, version=version)
     # else:
     #     raise HTTPException(status_code=500, detail="Addresses not found.")
@@ -164,7 +135,6 @@ async def get_process_bigraph_addresses() -> BigraphRegistryAddresses:
 )
 async def validate_composition(
         spec_file: UploadFile = File(..., description="Composition JSON File"),
-        simulators: List[str] = Query(..., description="Simulator package names to use for implementation"),
 ) -> ValidatedComposition:
     from process_bigraph import Composite
     from bsp import app_registrar
@@ -177,16 +147,9 @@ async def validate_composition(
     try:
         contents = await spec_file.read()
         document_data: Dict = json.loads(contents)
-        composite = Composite(
-            config={'state': document_data},
-            core=app_registrar.core
-        )
-        return ValidatedComposition(state=composite.state, valid=True)
+        return check_composition(document_data)
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON format.")
-    except Exception as e:
-        # raise HTTPException(status_code=400, detail=str(e))
-        return ValidatedComposition(state={'fail': str(e)}, valid=False)
 
 
 @app.post(
@@ -287,10 +250,9 @@ async def get_composition_state(job_id: str):
 
 @app.post(
     "/generate-simularium-file",
-    # response_model=PendingSimulariumJob,
     operation_id='generate-simularium-file',
     tags=["Files"],
-    summary='Generate a simularium file with a compatible simulation results file from either Smoldyn, SpringSaLaD, or ReaDDy.')
+    summary='Generate a simularium file with a compatible simulation results file from Smoldyn')
 async def generate_simularium_file(
         uploaded_file: UploadFile = File(..., description="A file containing results that can be parse by Simularium (spatial)."),
         box_size: float = Query(..., description="Size of the simulation box as a floating point number."),
@@ -301,8 +263,12 @@ async def generate_simularium_file(
 ):
     job_id = "files-generate-simularium-file" + str(uuid.uuid4())
     _time = db_conn_gateway.timestamp()
-    # upload_prefix, bucket_prefix = file_upload_prefix(job_id)
-    uploaded_file_location = await write_uploaded_file(job_id=job_id, uploaded_file=uploaded_file, bucket_name=DEFAULT_BUCKET_NAME, extension='.txt')
+    uploaded_file_location = await write_uploaded_file(
+        job_id=job_id,
+        uploaded_file=uploaded_file,
+        bucket_name=DEFAULT_BUCKET_NAME,
+        extension='.txt'
+    )
 
     # new simularium job in db
     if filename is None:
@@ -327,9 +293,24 @@ async def generate_simularium_file(
     gen_id = new_job_submission.get('_id')
     if gen_id is not None:
         new_job_submission.pop('_id')
+
     return new_job_submission
-    # except Exception as e:
-    # raise HTTPException(status_code=404, detail=f"A simularium file cannot be parsed from your input. Please check your input file and refer to the simulariumio documentation for more details.")
+
+
+# -- Health: check health status --
+
+@app.get(
+    "/",
+    tags=["Health"],
+    summary="Health check",
+    response_model=HealthCheckResponse,
+)
+def check_health() -> HealthCheckResponse:
+    response = check_client(db_conn_gateway)
+    return HealthCheckResponse(
+        version=APP_VERSION,
+        status="running" if response.status == "PASS" else response
+    )
 
 
 # -- Processes: submit single simulator jobs --
@@ -517,7 +498,7 @@ async def get_output_file(job_id: str):
         else:
             source = None
 
-        return IncompleteJob(
+        return IncompleteFileJob(
             job_id=job_id,
             timestamp=job.get('timestamp'),
             status=job.get('status'),

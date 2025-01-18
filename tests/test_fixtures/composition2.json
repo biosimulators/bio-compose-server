@@ -1,0 +1,89 @@
+{
+    "particle": {
+        "_type": "process",
+        "address": "local:smoldyn-process",
+        "config": {
+            "model": {
+                "model_source": "MinE.txt"
+            }
+        },
+        "inputs": {
+            "species_counts": [
+                "species_counts_store"
+            ],
+            "molecules": [
+                "molecules_store"
+            ]
+        },
+        "outputs": {
+            "species_counts": [
+                "species_counts_store"
+            ],
+            "molecules": [
+                "molecules_store"
+            ]
+        }
+    },
+    "ode": {
+        "_type": "process",
+        "address": "local:copasi-process",
+        "config": {
+            "model": {
+                "model_source": "BorisEJB.xml"
+            }
+        },
+        "inputs": {},
+        "outputs": {
+            "species_concentrations": [
+                "species_concentrations_store"
+            ],
+            "reaction_fluxes": [
+                "reaction_fluxes_store"
+            ],
+            "time": [
+                "time_store"
+            ]
+        }
+    },
+    "fba": {
+        "_type": "process",
+        "address": "local:cobra-process",
+        "config": {
+            "model": {
+                "model_source": "BorisEJB.xml"
+            }
+        },
+        "inputs": {
+            "reaction_fluxes": [
+                "reaction_fluxes_store"
+            ]
+        },
+        "outputs": {
+            "fluxes": [
+                "fluxes_store"
+            ]
+        }
+    },
+    "emitter": {
+        "_type": "step",
+        "address": "local:ram-emitter",
+        "config": {
+            "emit": {
+		"molecules": "tree[float]",
+                "species_concentrations": "tree[float]",
+                "fluxes": "tree[float]"
+            }
+        },
+        "inputs": {
+            "species_concentrations": [
+                "species_concentrations_store"
+            ],
+            "fluxes": [
+                "fluxes_store"
+            ],
+            "molecules": [
+                "molecules_store"
+            ]
+        }
+    }
+}
