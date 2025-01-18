@@ -3,6 +3,8 @@
 
 # Run at root of repo!
 
+set -e
+
 version="$1"
 push="$2"
 

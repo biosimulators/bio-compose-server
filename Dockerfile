@@ -37,7 +37,7 @@ RUN conda update -n base -c conda-forge conda \
     && conda env create -f /bio-compose-server/environment.yml -y \
     && conda run -n server pip install --upgrade pip \
     && echo "conda activate server" >> /.bashrc \
-    && conda run -n server poetry config virtualenvs.create false \
+    && conda run -n server poetry config virtualenvs.create false
 
 ENTRYPOINT ["/entrypoint.sh"]
 

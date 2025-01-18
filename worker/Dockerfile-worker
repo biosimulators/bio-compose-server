@@ -1,4 +1,4 @@
-FROM ghcr.io/biosimulators/bio-compose-server-base:0.0.3-dev
+FROM ghcr.io/biosimulators/bio-compose-server-base:0.0.4-dev
 # STABLE IS 0.0.2-dev
 
 LABEL org.opencontainers.image.title="bio-compose-server-worker" \
