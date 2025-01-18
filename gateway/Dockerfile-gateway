@@ -18,10 +18,9 @@ COPY ./worker /bio-compose-server/worker
 #     && conda run -n server poetry lock \
 #     && conda run -n server poetry install
 
-RUN conda run -n server bash -c "\
-    poetry config virtualenvs.create false && \
-    poetry lock && \
-    poetry install"
+RUN conda run -n server poetry config virtualenvs.create false \
+    && conda run -n server poetry lock \
+    && conda run -n server poetry install
 
 ENTRYPOINT ["/entrypoint.sh"]
 

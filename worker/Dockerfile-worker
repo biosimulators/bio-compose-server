@@ -45,15 +45,9 @@ RUN apt-get update \
         libstdc++6 \
         && apt-get clean
 
-# RUN conda run -n server poetry config virtualenvs.create false \
-#     && conda run -n server poetry lock \
-#     && conda run -n server poetry install \
-#     && conda install -n server conda-forge::pymem3dg -y
-
-RUN conda run -n server bash -c "\
-    poetry config virtualenvs.create false && \
-    poetry lock && \
-    poetry install" \
+RUN conda run -n server poetry config virtualenvs.create false \
+    && conda run -n server poetry lock \
+    && conda run -n server poetry install \
     && conda install -n server conda-forge::pymem3dg -y \
     && conda install -n server conda-forge::readdy -y
 

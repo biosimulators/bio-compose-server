@@ -1,4 +1,4 @@
-FROM condaforge/miniforge3:latest
+FROM condaforge/miniforge3:24.9.2-0
 
 LABEL org.opencontainers.image.title="bio-compose-server-base" \
     org.opencontainers.image.description="Base Docker image for BioCompose REST API management, job processing, and datastorage with MongoDB, ensuring scalable and robust performance." \
@@ -27,18 +27,22 @@ WORKDIR /app
 # copy env configs
 COPY ./environment.yml /app/environment.yml
 COPY ./pyproject.toml /app/pyproject.toml
-COPY ./shared/scripts/entrypoint.sh /entrypoint.sh
+COPY ./shared/scripts/entrypoint.sh /app/entrypoint.sh
 
-RUN echo "Server" > app/README.md \
-    && mkdir config \
-    && chmod +x /entrypoint.sh
+# COPY . /app
 
+RUN echo "Server" > /app/README.md \
+    && mkdir /app/config \
+    && chmod +x /app/entrypoint.sh
+#
 RUN conda update -n base -c conda-forge conda \
     && conda env create -f /app/environment.yml -y \
+    && conda run -n server poetry self update \
+    && echo "conda activate server" >> /.bashrc \
     && conda run -n server pip install --upgrade pip \
-    && echo "conda activate server" >> /.bashrc
+    && conda run -n server pip install --no-cache-dir git+https://github.com/vivarium-collective/process-bigraph.git@main
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 
 # RUN apt-get update \

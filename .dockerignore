@@ -6,6 +6,7 @@ bio_check/__pycache__
 .Python
 env
 pip-log.txt
+NOTES.txt
 pip-delete-this-directory.txt
 .tox
 .coverage

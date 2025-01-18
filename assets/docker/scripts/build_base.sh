@@ -8,6 +8,11 @@ set -e
 version="$1"
 push="$2"
 
+if [ "$version" == "" ]; then
+  echo "you must pass a version for deploy."
+  exit 1
+fi
+
 # version=$(cat ./assets/docker/.BASE_VERSION)
 img_name=ghcr.io/biosimulators/bio-compose-server-base:"$version"
 latest_name=ghcr.io/biosimulators/bio-compose-server-base:latest
