@@ -34,6 +34,9 @@ jobs:
           BASE_IMG="${{ vars.IMG_ROOT }}-base:$BASE_VERSION"
           docker build --no-cache -f ./Dockerfile -t $BASE_IMG .
           docker push $BASE_IMG
+          LATEST_IMG="${{ vars.IMG_ROOT }}-base:latest"
+          docker tag $BASE_IMG $LATEST_IMG
+          docker push $LATEST_IMG
 
   deploy-gateway:
     needs: deploy-base
@@ -50,6 +53,9 @@ jobs:
           GATEWAY_IMG="${{ vars.IMG_ROOT }}-gateway:$GATEWAY_VERSION"
           docker build --no-cache -f ./gateway/Dockerfile-gateway -t $GATEWAY_IMG .
           docker push $GATEWAY_IMG
+          LATEST_IMG="${{ vars.IMG_ROOT }}-gateway:latest"
+          docker tag $GATEWAY_IMG $LATEST_IMG
+          docker push $LATEST_IMG
 
   deploy-worker:
     needs: deploy-gateway
@@ -66,3 +72,6 @@ jobs:
           WORKER_IMG="${{ vars.IMG_ROOT }}-worker:$WORKER_VERSION"
           docker build --no-cache -f ./worker/Dockerfile-worker -t $WORKER_IMG .
           docker push $WORKER_IMG
+          LATEST_IMG="${{ vars.IMG_ROOT }}-worker:latest"
+          docker tag $WORKER_IMG $LATEST_IMG
+          docker push $LATEST_IMG
