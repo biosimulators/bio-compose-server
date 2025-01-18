@@ -42,7 +42,7 @@ RUN conda update -n base -c conda-forge conda \
     && conda run -n server pip install --upgrade pip \
     && conda run -n server pip install --no-cache-dir git+https://github.com/vivarium-collective/process-bigraph.git@main
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+# ENTRYPOINT ["/app/entrypoint.sh"]
 
 
 # RUN apt-get update \

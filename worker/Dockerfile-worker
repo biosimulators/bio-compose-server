@@ -1,4 +1,4 @@
-FROM ghcr.io/biosimulators/bio-compose-server-base:latest
+FROM ghcr.io/biosimulators/bio-compose-server-base:0.0.5-dev
 # STABLE IS 0.0.2-dev and 0.0.3-dev
 
 LABEL org.opencontainers.image.title="bio-compose-server-worker" \
@@ -52,7 +52,7 @@ RUN conda run -n server poetry config virtualenvs.create false \
     && conda install -n server conda-forge::readdy -y \
     && conda run -n server pip install biosimulator-processes[amici,cobra,copasi,smoldyn,tellurium]
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+# ENTRYPOINT ["/app/entrypoint.sh"]
 
-CMD ["python3", "/app/worker/main.py"]
+CMD ["conda", "run", "-n", "server", "python3", "/app/worker/main.py"]
 

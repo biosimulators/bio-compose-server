@@ -1,4 +1,4 @@
-FROM ghcr.io/biosimulators/bio-compose-server-base:latest
+FROM ghcr.io/biosimulators/bio-compose-server-base:0.0.5-dev
 # STABLE IS 0.0.2-dev and 0.0.3-dev
 
 LABEL org.opencontainers.image.title="bio-compose-server-gateway" \
@@ -22,6 +22,6 @@ RUN conda run -n server poetry config virtualenvs.create false \
     && conda run -n server poetry lock \
     && conda run -n server poetry install
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+# ENTRYPOINT ["/app/entrypoint.sh"]
 
-CMD ["uvicorn", "gateway.main:app", "--port", "3001", "--host", "0.0.0.0", "--reload"]
+CMD ["conda", "run", "-n", "server", "uvicorn", "gateway.main:app", "--port", "3001", "--host", "0.0.0.0", "--reload"]
