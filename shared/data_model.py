@@ -228,6 +228,14 @@ class ValidatedComposition(BaseClass):
 
 # -- misc --
 
+@dataclass
+class IncompleteJob(BaseClass):
+    job_id: str
+    timestamp: float
+    status: str
+    source: str
+
+
 class JobStatuses:
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
