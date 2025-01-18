@@ -17,7 +17,7 @@ COPY assets/docker/config/.pys_usercfg.ini /Pysces/.pys_usercfg.ini
 COPY assets/docker/config/.pys_usercfg.ini /root/Pysces/.pys_usercfg.ini
 COPY tests/test_fixtures /test_fixtures
 
-WORKDIR /bio-compose-server
+WORKDIR /app
 
 # copy container libs
 # COPY ./gateway /bio-compose-server/gateway
@@ -25,16 +25,16 @@ WORKDIR /bio-compose-server
 # COPY ./worker /bio-compose-server/worker
 
 # copy env configs
-COPY ./environment.yml /bio-compose-server/environment.yml
-COPY ./pyproject.toml /bio-compose-server/pyproject.toml
+COPY ./environment.yml /app/environment.yml
+COPY ./pyproject.toml /app/pyproject.toml
 COPY ./shared/scripts/entrypoint.sh /entrypoint.sh
 
-RUN echo "Server" > /bio-compose-server/README.md \
+RUN echo "Server" > appr/README.md \
     && mkdir config \
     && chmod +x /entrypoint.sh
 
 RUN conda update -n base -c conda-forge conda \
-    && conda env create -f /bio-compose-server/environment.yml -y \
+    && conda env create -f /app/environment.yml -y \
     && conda run -n server pip install --upgrade pip \
     && echo "conda activate server" >> /.bashrc
 
