@@ -24,4 +24,5 @@ jobs:
           docker build --no-cache -f ./Dockerfile -t $BASE_IMG .
           docker push $BASE_IMG
           LATEST_IMG="${{ vars.IMG_ROOT }}-base:latest"
+          docker tag $BASE_IMG $LATEST_IMG
           docker push $LATEST_IMG
